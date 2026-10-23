@@ -7,6 +7,7 @@ import { ContactPage } from './ContactPage';
 import { ActionPlanPage, CompanionPage, CoveragePage, NewScanPage, OverviewPage, ReportLayoutPage, ReportsPage, WorkspaceLayout } from './Workspace';
 import { AdminPanel } from './AdminPanel';
 import './styles.css';
+import './theme.css';
 import { AuthProvider } from './AuthContext';
 import { UsageProvider } from './UsageContext';
 

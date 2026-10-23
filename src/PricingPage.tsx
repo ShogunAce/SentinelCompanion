@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { PricingSection } from './PricingSection';
 import { Icon } from './components';
+import { WaitlistModal } from './WaitlistModal';
 
 export function PricingPage() {
   return (
@@ -82,6 +83,7 @@ export function PricingPage() {
           </div>
         </section>
       </main>
+      <WaitlistModal />
 
       {/* Footer */}
       <footer className="footer container">

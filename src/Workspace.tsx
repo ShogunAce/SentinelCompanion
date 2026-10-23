@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ActionLink, Brand, Dialog, EmptyState, FilterTabs, Icon, PreviewNote, ReportPreview, ScopeContent, ScopeDialog, UrlForm } from './components';
+import { ActionLink, Brand, Dialog, EmptyState, FilterTabs, Icon, PreviewNote, ScopeContent, ScopeDialog, UrlForm } from './components';
 import type { IconName, UrlFormProps } from './components';
 import { ProtectedWorkspaceGuard } from './ProtectedRoute';
 import { UserHeaderMenu } from './UserHeaderMenu';
@@ -13,6 +13,8 @@ import { GeminiChat } from './GeminiChat';
 import { UsagePanel } from './UsagePanel';
 import { useUsage } from './UsageContext';
 import { WaitlistModal } from './WaitlistModal';
+import { SampleReport, fromScanResponse } from './SampleReport';
+import './workspace.css';
 
 const destinations: { path: string; label: string; icon: IconName }[] = [
   { path: '/workspace', label: 'Overview', icon: 'overview' },
@@ -33,15 +35,16 @@ export function WorkspaceLayout() {
   const active = destinations.find(d => d.path === location.pathname)?.label || 'Report layout';
 
   return (
-    <div className="workspace-shell">
+    <div className="workspace-shell ws-theme">
       <aside className="sidebar">
         <Brand/>
         <span className="sidebar-label">Your workspace</span>
         <WorkspaceNav/>
+        <SidebarUsage/>
         <div className="sidebar-bottom">
-          <Icon name="shield"/>
-          <p>Digital companion.<br/>Secure vibe coding.</p>
+          <p>Digital companion. Secure vibe coding.</p>
           <span>Gemini AI Powered</span>
+          <img src="/sentinel-bot-512.webp" alt=""/>
         </div>
       </aside>
 
@@ -104,14 +107,28 @@ export function WorkspaceLayout() {
   );
 }
 
-function PageHeading({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: React.ReactNode }) { return <div className="page-heading"><div><p className="section-kicker">{eyebrow}</p><h1>{title}</h1><p>{description}</p></div>{action}</div>; }
+function SidebarUsage() {
+  const { currentPlan, scansUsed, companionUsed } = useUsage();
+  const pct = (used: number, limit: number) => Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+  const scans = pct(scansUsed, currentPlan.scansPerMonth);
+  const msgs = pct(companionUsed, currentPlan.companionPerMonth);
+  return (
+    <div className="side-usage">
+      <div className="side-usage-top">{currentPlan.name} plan <span>Active</span></div>
+      <div className="side-meter"><span>Fresh scans <b>{scansUsed} / {currentPlan.scansPerMonth}</b></span><div className="side-bar"><i className={scans >= 100 ? 'full' : undefined} style={{ width: `${scans}%` }}/></div></div>
+      <div className="side-meter"><span>Companion <b>{companionUsed} / {currentPlan.companionPerMonth}</b></span><div className="side-bar"><i className={msgs >= 100 ? 'full' : undefined} style={{ width: `${msgs}%` }}/></div></div>
+    </div>
+  );
+}
+
+function PageHeading({ eyebrow, title, description, action }: { eyebrow: string; title: React.ReactNode; description: string; action?: React.ReactNode }) { return <div className="page-heading"><div><p className="section-kicker">{eyebrow}</p><h1>{title}</h1><p>{description}</p></div>{action}</div>; }
 
 export function CompanionPage() {
   return (
     <>
       <PageHeading
         eyebrow="Gemini AI Security Co-Pilot"
-        title="Talk to your Digital Companion"
+        title={<>Talk to your <em>digital companion.</em></>}
         description="Ask Sentinel anything about your vibecoded app's security, break down findings, or generate targeted prompts for Cursor, Lovable, and Bolt."
       />
       <GeminiChat isEmbedded />
@@ -120,11 +137,13 @@ export function CompanionPage() {
 }
 
 export function OverviewPage() {
+  const navigate = useNavigate();
+  const [finding, setFinding] = useState<FindingPayload | null>(null);
   return (
     <>
       <PageHeading
         eyebrow="Digital Security Companion"
-        title="Understand & fix your vibecoded app."
+        title={<>Understand &amp; <em>fix</em> your vibecoded app.</>}
         description="Audit AI-generated code for cybersecurity vulnerabilities, catch logic flaws early, and generate targeted prompt fixes for your builder."
         action={<ActionLink to="/workspace/companion">Talk to Gemini AI</ActionLink>}
       />
@@ -135,11 +154,11 @@ export function OverviewPage() {
       <div className="overview-grid">
         <section className="surface latest-report">
           <div className="surface-heading">
-            <h2>Interactive Sample Report</h2>
-            <Link className="text-link" to="/workspace/reports/layout">Full Layout<Icon name="arrow"/></Link>
+            <h2>Interactive sample report</h2>
+            <Link className="text-link" to="/workspace/reports/layout">Full layout<Icon name="arrow"/></Link>
           </div>
-          <div style={{ padding: '16px' }}>
-            <ReportPreview compact />
+          <div className="overview-sample">
+            <SampleReport onBreakdown={setFinding} onRunScan={() => navigate('/workspace/new-scan')} />
           </div>
         </section>
 
@@ -187,8 +206,34 @@ export function OverviewPage() {
         </div>
         <Link className="text-link" to="/workspace/coverage">Explore coverage<Icon name="arrow"/></Link>
       </section>
-      <PreviewNote/>
+      <PreviewNote>The sample report uses illustrative findings. Run a scan to see your own.</PreviewNote>
+      {finding && <ReportBreakdownModal finding={finding} appUrl="https://your-app.com" onClose={() => setFinding(null)} />}
     </>
+  );
+}
+
+const SCAN_STEPS = ['Checking robots.txt', 'Fetching the home page', 'Inspecting response headers', 'Analyzing script bundles', 'Running deterministic checks'];
+
+/** Visual progress while /api/scan runs; steps advance on a timer and the last one waits for the response. */
+function ScanProgress({ url }: { url: string }) {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setStep(s => Math.min(SCAN_STEPS.length - 1, s + 1)), 700);
+    return () => clearInterval(t);
+  }, []);
+  let host = url;
+  try { host = new URL(url).hostname; } catch { /* keep raw input */ }
+  return (
+    <div className="surface scan-progress" role="status" aria-live="polite">
+      <div className="scan-progress-top">
+        <div className="scan-bot"><img src="/sentinel-bot-512.webp" alt=""/></div>
+        <div><h3>Scanning {host || 'your app'}…</h3><p>Polite, read-only, rate-limited requests.</p></div>
+      </div>
+      <div className="scan-track"><i style={{ width: `${((step + 0.6) / SCAN_STEPS.length) * 100}%` }}/></div>
+      <ul className="scan-steps">
+        {SCAN_STEPS.map((s, i) => <li key={s} className={i < step ? 'done' : i === step ? 'run' : undefined}><i>{i < step ? '✓' : ''}</i>{s}</li>)}
+      </ul>
+    </div>
   );
 }
 
@@ -200,7 +245,7 @@ export function NewScanPage(props: UrlFormProps) {
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanReport, setScanReport] = useState<any | null>(null);
   const [selectedFinding, setSelectedFinding] = useState<FindingPayload | null>(null);
-  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  const [scannedUrl, setScannedUrl] = useState('');
 
   const handleRunScan = async (targetUrl: string) => {
     if (!targetUrl) return;
@@ -213,6 +258,7 @@ export function NewScanPage(props: UrlFormProps) {
     setIsScanning(true);
     setScanError(null);
     setScanReport(null);
+    setScannedUrl(targetUrl);
 
     try {
       const res = await fetch('/api/scan', {
@@ -259,17 +305,11 @@ export function NewScanPage(props: UrlFormProps) {
     }
   };
 
-  const copyPrompt = (id: string, promptText: string) => {
-    navigator.clipboard.writeText(promptText);
-    setCopiedPromptId(id);
-    setTimeout(() => setCopiedPromptId(null), 2500);
-  };
-
   return (
     <>
       <PageHeading
         eyebrow="Audit your vibecoded app"
-        title="Spot cybersecurity & coding flaws."
+        title={<>Spot cybersecurity &amp; <em>coding flaws.</em></>}
         description="Enter your app’s address. Sentinel inspects public surfaces, client scripts, and response headers for security vulnerabilities with a polite, deterministic scan."
       />
 
@@ -301,17 +341,7 @@ export function NewScanPage(props: UrlFormProps) {
             />
           )}
 
-          {isScanning && (
-            <div className="surface" style={{ marginTop: '20px', padding: '24px', textAlign: 'center' }}>
-              <div className="empty-icon" style={{ margin: '0 auto 16px' }}>
-                <Icon name="shield" />
-              </div>
-              <h3 style={{ fontSize: '16px', fontWeight: '600' }}>Scanning your app...</h3>
-              <p style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '8px' }}>
-                Checking robots.txt, inspecting security headers, analyzing script bundles, and testing against 11 deterministic checks.
-              </p>
-            </div>
-          )}
+          {isScanning && <ScanProgress url={scannedUrl || props.value} />}
 
           {scanError && (
             <div
@@ -331,131 +361,12 @@ export function NewScanPage(props: UrlFormProps) {
           )}
 
           {scanReport && (
-            <div className="surface" style={{ marginTop: '28px', padding: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', borderBottom: '1px solid var(--line)', paddingBottom: '20px' }}>
-                <div>
-                  <span className="section-kicker" style={{ marginBottom: '6px' }}>Scan Report · {scanReport.target.origin}</span>
-                  <h2 style={{ fontSize: '24px', marginTop: '4px' }}>Security Audit Result</h2>
-                  <p style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px' }}>{scanReport.summary}</p>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: '#f8f8f3', padding: '14px 22px', borderRadius: '8px', border: '1px solid var(--line)' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      fontSize: '38px',
-                      fontWeight: '800',
-                      lineHeight: '1',
-                      color: scanReport.grade === 'A' ? '#16a34a' : scanReport.grade.startsWith('B') ? '#2563eb' : scanReport.grade.startsWith('C') ? '#d97706' : '#dc2626'
-                    }}>
-                      {scanReport.grade}
-                    </div>
-                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>Score {scanReport.score}/100</span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', padding: '16px 0', borderBottom: '1px solid var(--line)', fontSize: '12px', color: 'var(--muted)' }}>
-                <span><strong>{scanReport.coverage?.requests ?? 0}</strong> HTTP requests</span>
-                <span><strong>{scanReport.coverage?.scriptsChecked ?? 0}</strong> scripts inspected</span>
-                <span><strong>{scanReport.coverage?.checksRun ?? 0}</strong> checks run</span>
-                <span><strong>{scanReport.timing?.ms ?? 0}ms</strong> duration</span>
-              </div>
-
-              <div style={{ marginTop: '24px' }}>
-                <h3 style={{ fontSize: '17px', fontWeight: '600', marginBottom: '16px' }}>
-                  Findings ({scanReport.findings?.length ?? 0})
-                </h3>
-
-                {scanReport.findings?.length === 0 ? (
-                  <div style={{ padding: '24px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', color: '#166534' }}>
-                    <h4 style={{ fontWeight: '600', fontSize: '14px' }}>Clean bill of health!</h4>
-                    <p style={{ fontSize: '12px', marginTop: '4px', color: '#15803d' }}>
-                      No critical security issues, leaked keys, or missing basic headers were detected during this passive surface audit.
-                    </p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {scanReport.findings.map((f: any) => {
-                      const sev = (f.severity || 'warning').toLowerCase();
-                      const sevColor = sev === 'critical' ? '#dc2626' : sev === 'warning' ? '#d97706' : '#2563eb';
-                      return (
-                        <div
-                          key={f.id}
-                          className="surface"
-                          style={{
-                            padding: '20px',
-                            borderLeft: `4px solid ${sevColor}`,
-                            background: '#fcfcf9',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-                            <div>
-                              <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: '600' }}>
-                                {f.category}
-                              </span>
-                              <h4 style={{ fontSize: '16px', fontWeight: '600', marginTop: '4px' }}>{f.title}</h4>
-                            </div>
-                            <span
-                              className={`finding-severity-badge ${sev}`}
-                              style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '4px' }}
-                            >
-                              {f.severity.toUpperCase()} (-{f.deduction} pts)
-                            </span>
-                          </div>
-
-                          <p style={{ fontSize: '13px', marginTop: '10px', color: 'var(--ink)' }}>{f.description}</p>
-
-                          {f.evidence && (
-                            <div style={{ marginTop: '12px', padding: '12px', background: '#1e2430', color: '#e2e8f0', borderRadius: '6px', fontFamily: 'monospace', fontSize: '12px', overflowX: 'auto' }}>
-                              <span style={{ color: '#94a3b8', fontSize: '10px' }}>Evidence:</span>
-                              <pre style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{f.evidence}</pre>
-                            </div>
-                          )}
-
-                          <div style={{ marginTop: '14px', background: '#f1f5f9', padding: '12px 16px', borderRadius: '6px' }}>
-                            <strong style={{ fontSize: '12px', color: '#1e293b' }}>Recommended Action: </strong>
-                            <span style={{ fontSize: '12px', color: '#475569' }}>{f.action}</span>
-                          </div>
-
-                          {f.prompt && (
-                            <div style={{ marginTop: '14px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--muted)' }}>Ready-to-use Prompt for Cursor / Lovable / Bolt:</span>
-                                <button
-                                  className="button small"
-                                  style={{ padding: '6px 12px', minHeight: '32px', fontSize: '11px' }}
-                                  onClick={() => copyPrompt(f.id, f.prompt)}
-                                >
-                                  {copiedPromptId === f.id ? 'Copied Prompt!' : 'Copy Fix Prompt'}
-                                  <Icon name="plan" />
-                                </button>
-                              </div>
-                              <pre style={{ margin: 0, padding: '12px', background: '#ffffff', border: '1px solid var(--line)', borderRadius: '6px', fontSize: '11px', whiteSpace: 'pre-wrap', color: 'var(--ink)' }}>
-                                {f.prompt}
-                              </pre>
-                            </div>
-                          )}
-
-                          <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
-                            <button
-                              className="button small"
-                              onClick={() => setSelectedFinding({
-                                title: f.title,
-                                severity: sev as any,
-                                description: f.description,
-                                evidence: f.evidence || f.action,
-                              })}
-                            >
-                              Break down with Gemini AI
-                              <Icon name="arrow" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+            <div className="scan-result">
+              <SampleReport
+                data={fromScanResponse(scanReport, scannedUrl || props.value)}
+                onBreakdown={setSelectedFinding}
+                openFirst
+              />
             </div>
           )}
 
@@ -479,7 +390,7 @@ export function NewScanPage(props: UrlFormProps) {
       {selectedFinding && (
         <ReportBreakdownModal
           finding={selectedFinding}
-          appUrl={scanReport?.target?.origin || props.value}
+          appUrl={scanReport?.origin || scanReport?.target?.origin || scannedUrl || props.value}
           onClose={() => setSelectedFinding(null)}
         />
       )}
@@ -524,7 +435,7 @@ export function ReportsPage() {
     <>
       <PageHeading
         eyebrow="Security Vulnerability Audits"
-        title="Security Reports"
+        title={<>Security <em>reports.</em></>}
         description="Review past audits, examine plain-English vulnerability findings, and grab copy-paste prompt fixes for your AI builder."
         action={<ActionLink to="/workspace/reports/layout" secondary>View report layout</ActionLink>}
       />
@@ -622,6 +533,16 @@ export function ReportsPage() {
     </>
   );
 }
-export function ReportLayoutPage() { return <><Link className="text-link back-to-reports" to="/workspace/reports">← Back to reports</Link><PageHeading eyebrow="Sample Security Audit" title="Report Layout Preview" description="Preview how Sentinel organizes cybersecurity vulnerabilities, impact analysis, and builder prompt fixes."/><ReportPreview/><PreviewNote>Layout preview only. No app has been assessed.</PreviewNote></>; }
-export function ActionPlanPage() { const [filter, setFilter] = useState('All'); return <><PageHeading eyebrow="Fix Prompt Library" title="Targeted AI Builder Prompts" description="Copy-paste prompts generated by Sentinel to patch security flaws directly in Cursor, Lovable, Bolt, v0, or AI Studio."/><section className="surface action-library"><div className="surface-heading"><FilterTabs items={['All', 'To review', 'Applied']} label="Action status" value={filter} onChange={setFilter}/><span className="subtle">Builder guidance</span></div><div aria-live="polite"><EmptyState icon="plan" title="No fix prompts queued." action={<ActionLink to="/workspace/new-scan" secondary>Go to new scan</ActionLink>}>Actionable AI prompts to fix security flaws will appear here after a scan.</EmptyState>{filter !== 'All' && <p className="filter-note">{filter === 'Applied' ? 'Applied fix prompts will be shown here when available.' : 'Fix prompts awaiting review will be shown here when available.'}</p>}</div></section><div className="action-note"><Icon name="info"/><p>Applying a prompt fix will still require review and verification.<br/><span className="subtle">A builder prompt is a starting point, not proof that a concern has been resolved.</span></p></div></>; }
-export function CoveragePage() { return <><PageHeading eyebrow="Companion Scope & Boundaries" title="What Sentinel inspects in vibecoded apps." description="Understand which cybersecurity vulnerabilities Sentinel detects automatically and where deeper code reviews are needed."/><section className="surface coverage-view"><h2>What Sentinel can—and can’t—see.</h2><ScopeContent/></section><section className="current-preview"><h2>What this frontend currently does</h2><p>Explore the workspace, edit and locally validate an address, and review the intended report structure. Your inputs remain in temporary memory.</p><ul><li><Icon name="info"/>No live scanning.</li><li><Icon name="info"/>No source-code inspection.</li><li><Icon name="info"/>No authentication or database verification.</li></ul></section></>; }
+export function ReportLayoutPage() {
+  const navigate = useNavigate();
+  const [finding, setFinding] = useState<FindingPayload | null>(null);
+  return <>
+    <Link className="text-link back-to-reports" to="/workspace/reports">← Back to reports</Link>
+    <PageHeading eyebrow="Sample Security Audit" title={<>Report layout <em>preview.</em></>} description="Preview how Sentinel organizes cybersecurity vulnerabilities, impact analysis, and builder prompt fixes. Open a finding and try marking it fixed."/>
+    <SampleReport onBreakdown={setFinding} onRunScan={() => navigate('/workspace/new-scan')}/>
+    <PreviewNote>Layout preview only. No app has been assessed.</PreviewNote>
+    {finding && <ReportBreakdownModal finding={finding} appUrl="https://your-app.com" onClose={() => setFinding(null)} />}
+  </>;
+}
+export function ActionPlanPage() { const [filter, setFilter] = useState('All'); return <><PageHeading eyebrow="Fix Prompt Library" title={<>Targeted AI builder <em>prompts.</em></>} description="Copy-paste prompts generated by Sentinel to patch security flaws directly in Cursor, Lovable, Bolt, v0, or AI Studio."/><section className="surface action-library"><div className="surface-heading"><FilterTabs items={['All', 'To review', 'Applied']} label="Action status" value={filter} onChange={setFilter}/><span className="subtle">Builder guidance</span></div><div aria-live="polite"><EmptyState icon="plan" title="No fix prompts queued." action={<ActionLink to="/workspace/new-scan" secondary>Go to new scan</ActionLink>}>Actionable AI prompts to fix security flaws will appear here after a scan.</EmptyState>{filter !== 'All' && <p className="filter-note">{filter === 'Applied' ? 'Applied fix prompts will be shown here when available.' : 'Fix prompts awaiting review will be shown here when available.'}</p>}</div></section><div className="action-note"><Icon name="info"/><p>Applying a prompt fix will still require review and verification.<br/><span className="subtle">A builder prompt is a starting point, not proof that a concern has been resolved.</span></p></div></>; }
+export function CoveragePage() { return <><PageHeading eyebrow="Companion Scope & Boundaries" title={<>What Sentinel inspects in <em>vibecoded apps.</em></>} description="Understand which cybersecurity vulnerabilities Sentinel detects automatically and where deeper code reviews are needed."/><section className="surface coverage-view"><h2>What Sentinel can—and can’t—see.</h2><ScopeContent/></section><section className="current-preview"><h2>What this frontend currently does</h2><p>Explore the workspace, edit and locally validate an address, and review the intended report structure. Your inputs remain in temporary memory.</p><ul><li><Icon name="info"/>No live scanning.</li><li><Icon name="info"/>No source-code inspection.</li><li><Icon name="info"/>No authentication or database verification.</li></ul></section></>; }

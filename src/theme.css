@@ -1,0 +1,32 @@
+/* Design tokens for the redesigned landing page (.lp), workspace (.ws-theme) and the shared report (.sr).
+   Scoped instead of on :root so the auth, contact and admin pages keep their current palette. */
+.lp, .ws-theme, .sr {
+  --paper: #F5F2EC;
+  --paper-2: #EFEBE3;
+  --ink: #141414;
+  --ink-80: rgba(20, 20, 20, 0.8);
+  --ink-66: rgba(20, 20, 20, 0.66);
+  --ink-45: rgba(20, 20, 20, 0.45);
+  --ink-28: rgba(20, 20, 20, 0.28);
+  --line: rgba(20, 20, 20, 0.08);
+  --line-2: rgba(20, 20, 20, 0.12);
+  --blue: #1F3BD6;
+  --blue-d: #1932BA;
+  --blue-10: rgba(31, 59, 214, 0.1);
+  --navy: #142A99;
+  --pink: #E58FA8;
+  --rose: #F7A6A6;
+  --coral: #E07A7A;
+  --lilac: #A48BE0;
+  --cyan: #8FD6E8;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-strong: rgba(255, 255, 255, 0.78);
+  --grad: linear-gradient(95deg, #E58FA8 0%, #1F3BD6 38%, #1F3BD6 66%, #A48BE0 100%);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --sans: 'Poppins', system-ui, -apple-system, sans-serif;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  /* legacy names used by existing components rendered inside these scopes */
+  --muted: rgba(20, 20, 20, 0.62);
+  --soft-blue: rgba(31, 59, 214, 0.08);
+}

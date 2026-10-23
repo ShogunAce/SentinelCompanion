@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { PLANS, SEATS_CLAIMED } from './plans';
 import { useUsage } from './UsageContext';
 import { useNavigate } from 'react-router-dom';
-import { Icon } from './components';
+import { Accent, Words } from './landingBits';
 
+// Rendered inside the landing page (as a colour band) and on /pricing (standalone).
+// The section carries the .lp scope itself so it is styled on both.
 export function PricingSection() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const { openWaitlistModal } = useUsage();
@@ -14,226 +16,84 @@ export function PricingSection() {
   };
 
   return (
-    <section id="pricing" className="section pricing-section">
-      <div className="container">
-        <div style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 48px' }}>
-          <div className="section-kicker">HONEST PRICING</div>
-          <h2 style={{ fontSize: 'clamp(32px, 3.8vw, 48px)', letterSpacing: '-0.03em' }}>
-            Pricing that matches what the companion <em>actually costs</em>.
-          </h2>
-          <p style={{ marginTop: '14px', fontSize: '15px', color: 'var(--muted)', lineHeight: 1.6 }}>
+    <section id="pricing" className="lp lp-section pricing band band-peri">
+      <div className="wrap">
+        <div className="center-head">
+          <p className="kicker center" data-reveal>Honest pricing</p>
+          <h2 className="h2" data-words><Words>Pricing that matches what the companion</Words> <Accent>actually costs.</Accent></h2>
+          <p className="lede" data-reveal>
             Every scan and AI message requires real computing resources. Our free plan covers early development needs, while founding plans support growing apps.
           </p>
-
-          {/* Monthly / Annual Toggle for Pro */}
-          <div
-            className="inline-flex max-w-full flex-wrap sm:flex-nowrap justify-center gap-1.5 sm:gap-3 p-1.5 rounded-full border border-[var(--line)] bg-[#eaece5] mt-6"
-          >
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-3 sm:px-4 py-2 rounded-full text-xs font-semibold transition-all ${
-                billingCycle === 'monthly'
-                  ? 'bg-white text-[var(--ink)] shadow-sm'
-                  : 'bg-transparent text-[var(--muted)]'
-              }`}
-            >
-              Monthly billing
-            </button>
-            <button
-              onClick={() => setBillingCycle('annual')}
-              className={`px-3 sm:px-4 py-2 rounded-full text-xs font-semibold transition-all ${
-                billingCycle === 'annual'
-                  ? 'bg-white text-[var(--ink)] shadow-sm'
-                  : 'bg-transparent text-[var(--muted)]'
-              }`}
-            >
-              Annual billing (Save $45)
-            </button>
+          <div className="toggle glass" role="group" aria-label="Billing" data-reveal>
+            <button type="button" aria-pressed={billingCycle === 'monthly'} onClick={() => setBillingCycle('monthly')}>Monthly billing</button>
+            <button type="button" aria-pressed={billingCycle === 'annual'} onClick={() => setBillingCycle('annual')}>Annual billing (save $45)</button>
           </div>
         </div>
 
-        {/* 3 Plan Cards Grid */}
-        <div className="pricing-grid">
-          {/* FREE CARD */}
-          <article className="pricing-card">
-            <div className="card-top">
-              <span className="plan-badge">Available Today</span>
-              <h3 className="plan-name">{PLANS.free.name}</h3>
-              <div className="price-tag">
-                <span className="amount">$0</span>
-                <span className="period">/ month</span>
-              </div>
-              <p className="plan-desc">For individual builders and early prototypes testing security baseline.</p>
-            </div>
-            <button className="button secondary" onClick={handleFreeClick} style={{ width: '100%', marginTop: '20px' }}>
-              Start free
-              <Icon name="arrow" />
-            </button>
-            <ol className="feature-list">
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.free.apps} connected app</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.free.scansPerMonth} fresh scans per month</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.free.companionPerMonth} companion messages per month</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Latest report history</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Manual on-demand rescans</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Top 3 copy-paste fix prompts</span>
-              </li>
-              <li className="dimmed">
-                <span>No deep checks</span>
-              </li>
-            </ol>
+        <div className="plans">
+          <article className="plan" data-reveal>
+            <div className="plan-tags"><span className="ptag">Available today</span></div>
+            <h3>{PLANS.free.name}</h3>
+            <div className="price"><b>$0</b><span>/ month</span></div>
+            <p>For individual builders and early prototypes testing their security baseline.</p>
+            <button className="btn btn-glass" type="button" onClick={handleFreeClick}>Start free →</button>
+            <ul className="feats">
+              <li>{PLANS.free.apps} connected app</li>
+              <li>{PLANS.free.scansPerMonth} fresh scans per month</li>
+              <li>{PLANS.free.companionPerMonth} companion messages per month</li>
+              <li>Latest report history</li>
+              <li>Manual on-demand rescans</li>
+              <li>Top 3 copy-paste fix prompts</li>
+              <li className="off">No deep checks</li>
+            </ul>
           </article>
 
-          {/* PRO CARD (Emphasized) */}
-          <article className="pricing-card emphasized">
-            <div className="card-top">
-              <div className="card-header-row">
-                <span className="plan-badge featured">Most builders pick this</span>
-                <span className="status-tag">Founding access, opening soon</span>
-              </div>
-              <h3 className="plan-name">{PLANS.pro.name}</h3>
-              <div className="price-tag">
-                {billingCycle === 'monthly' ? (
-                  <>
-                    <span className="amount">${PLANS.pro.price}</span>
-                    <span className="period">/ month</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="amount">${PLANS.pro.annualPrice}</span>
-                    <span className="period">/ year</span>
-                  </>
-                )}
-              </div>
-              <p className="plan-desc">
-                {billingCycle === 'annual'
-                  ? 'Save $45 a year when billed annually.'
-                  : 'Full coverage for active builders running multiple vibecoded projects.'}
-              </p>
+          <article className="plan pro" data-reveal>
+            <div className="plan-tags"><span className="ptag hot">Most builders pick this</span><span className="ptag soft">Opening soon</span></div>
+            <h3>{PLANS.pro.name}</h3>
+            <div className="price">
+              {billingCycle === 'monthly'
+                ? <><b>${PLANS.pro.price}</b><span>/ month</span></>
+                : <><b>${PLANS.pro.annualPrice}</b><span>/ year</span></>}
             </div>
-            <button
-              className="button"
-              onClick={() => openWaitlistModal('pro', billingCycle)}
-              style={{ width: '100%', marginTop: '20px' }}
-            >
-              Join founding access
-            </button>
-            <ol className="feature-list">
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.pro.apps} connected apps</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.pro.scansPerMonth} fresh scans per month</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.pro.companionPerMonth} companion messages per month</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Full report history</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Weekly automated rescan</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>All copy-paste fix prompts</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Deep checks: Added later, only after you prove you own the domain.</span>
-              </li>
-            </ol>
+            <p>
+              {billingCycle === 'annual'
+                ? 'Save $45 a year when billed annually.'
+                : 'Full coverage for active builders running multiple vibecoded projects.'}
+            </p>
+            <button className="btn btn-navy" type="button" onClick={() => openWaitlistModal('pro', billingCycle)}>Join founding access</button>
+            <ul className="feats">
+              <li>{PLANS.pro.apps} connected apps</li>
+              <li>{PLANS.pro.scansPerMonth} fresh scans per month</li>
+              <li>{PLANS.pro.companionPerMonth} companion messages per month</li>
+              <li>Full report history</li>
+              <li>Weekly automated rescan</li>
+              <li>All copy-paste fix prompts</li>
+              <li>Deep checks, added later after you prove you own the domain</li>
+            </ul>
           </article>
 
-          {/* LIFETIME CARD */}
-          <article className="pricing-card quiet">
-            <div className="card-top">
-              <div className="card-header-row">
-                <span className="plan-badge quiet">100 founding seats</span>
-                <span className="status-tag">Founding access, opening soon</span>
-              </div>
-              <h3 className="plan-name">{PLANS.lifetime.name}</h3>
-              <div className="price-tag">
-                <span className="amount">${PLANS.lifetime.price}</span>
-                <span className="period">one-time</span>
-              </div>
-              <p className="plan-desc">One pay pass for founding supporters. Seats claimed: {SEATS_CLAIMED} of 100.</p>
-            </div>
-            <button
-              className="button secondary"
-              onClick={() => openWaitlistModal('lifetime', 'once')}
-              style={{ width: '100%', marginTop: '20px' }}
-            >
-              Join founding access
-            </button>
-            <ol className="feature-list">
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.lifetime.apps} connected apps</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.lifetime.scansPerMonth} fresh scans per month</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>{PLANS.lifetime.companionPerMonth} companion messages per month</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Full report history</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Weekly automated rescan</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>All copy-paste fix prompts</span>
-              </li>
-              <li>
-                <Icon name="check" className="check-icon" />
-                <span>Deep checks: Added later, only after you prove you own the domain.</span>
-              </li>
-            </ol>
+          <article className="plan" data-reveal>
+            <div className="plan-tags"><span className="ptag">{PLANS.lifetime.seatCap} founding seats</span><span className="ptag soft">Opening soon</span></div>
+            <h3>{PLANS.lifetime.name}</h3>
+            <div className="price"><b>${PLANS.lifetime.price}</b><span>one-time</span></div>
+            <p>One payment for founding supporters. Seats claimed: {SEATS_CLAIMED} of {PLANS.lifetime.seatCap}.</p>
+            <button className="btn btn-glass" type="button" onClick={() => openWaitlistModal('lifetime', 'once')}>Join founding access</button>
+            <ul className="feats">
+              <li>{PLANS.lifetime.apps} connected apps</li>
+              <li>{PLANS.lifetime.scansPerMonth} fresh scans per month</li>
+              <li>{PLANS.lifetime.companionPerMonth} companion messages per month</li>
+              <li>Full report history</li>
+              <li>Weekly automated rescan</li>
+              <li>All copy-paste fix prompts</li>
+              <li>Deep checks, added later after you prove you own the domain</li>
+            </ul>
           </article>
         </div>
 
-        {/* Pricing Notes */}
-        <div className="pricing-notes">
-          <div className="note-box">
-            <Icon name="shield" />
-            <div>
-              <strong>What counts as a scan:</strong> A scan is a fresh visit to your site. Re-viewing a result from the last 10 minutes does not count.
-            </div>
-          </div>
-          <div className="note-box">
-            <Icon name="shield" />
-            <div>
-              <strong>Fair use:</strong> Lifetime means the life of the product, with fair-use limits. Need more companion messages? Bring your own Gemini key (coming soon).
-            </div>
-          </div>
+        <div className="fine" data-reveal>
+          <p><strong>What counts as a scan:</strong> a fresh visit to your site. Re-viewing a result from the last 10 minutes does not count.</p>
+          <p><strong>Fair use:</strong> Lifetime means the life of the product, with fair-use limits. Need more companion messages? Bring your own Gemini key (coming soon).</p>
         </div>
       </div>
     </section>
