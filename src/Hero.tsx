@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 import { validateUrl } from './components';
 import type { UrlFormProps } from './components';
 import { GLOBE_IMG, GLOBE_VIDEO } from './landingBits';
@@ -12,6 +13,7 @@ export default function Hero({
   isScanning = false,
 }: UrlFormProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const companionRef = useRef<HTMLDivElement | null>(null);
   const [videoReady, setVideoReady] = useState(false);
@@ -160,17 +162,24 @@ export default function Hero({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const err = validateUrl(value || '');
+    const cleanVal = (value || '').trim();
+    const err = validateUrl(cleanVal);
     if (err) {
       setError(err);
       return;
     }
     setError('');
 
-    if (onSubmitScan && value?.trim()) {
-      onSubmitScan(value.trim());
+    // If user is signed in, directly take them to workspace and initiate scan
+    if (user && cleanVal) {
+      navigate(`/workspace/new-scan?target=${encodeURIComponent(cleanVal)}&auto=true`);
+      return;
+    }
+
+    if (onSubmitScan && cleanVal) {
+      onSubmitScan(cleanVal);
     } else {
-      navigate('/workspace/new-scan');
+      navigate(`/workspace/new-scan${cleanVal ? `?target=${encodeURIComponent(cleanVal)}` : ''}`);
     }
   };
 
@@ -196,7 +205,7 @@ export default function Hero({
       <div className="wrap">
         <div className="hero-grid">
           <div>
-            <div className="pill glass r1"><b>S</b><span>Your cybersecurity companion for vibecoded apps</span></div>
+            <div className="pill glass r1"><b>S</b><span>Your digital cybersecurity companion for vibecoded apps</span></div>
             <h1>
               <span className="r2">You vibecoded the app.</span>
               <span className="r3">Let's find &amp; fix the</span>
@@ -241,6 +250,7 @@ export default function Hero({
                 <div className="chip glass c1">XSS</div>
                 <div className="chip glass c2">JWT</div>
                 <div className="chip glass c3">SQLi</div>
+                <div className="chip glass c4" title="Insecure Direct Object Reference">IDOR</div>
               </div>
             </div>
           </div>

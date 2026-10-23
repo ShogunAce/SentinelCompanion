@@ -33,7 +33,11 @@ service cloud.firestore {
     // Validation schemas
     function isValidUser(data) {
       return data.keys().hasAll(['uid', 'email', 'role', 'createdAt'])
-        && data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'updatedAt',
+          'accountStatus', 'deletionRequestedAt', 'gracePeriodEndsAt', 'scheduledHardDeleteAt', 'cookieConsent',
+          'tier', 'isSuspended', 'bonusScans', 'bonusMessages'
+        ])
         && data.uid == request.auth.uid
         && data.email is string
         && data.role is string
@@ -91,9 +95,8 @@ service cloud.firestore {
       allow create: if isOwner(userId) 
         && isValidUser(incoming()) 
         && incoming().role == 'builder'; // Anti-privilege escalation
-      allow update: if isOwner(userId) 
-        && isValidUser(incoming()) 
-        && incoming().role == existing().role; // Cannot escalate role
+      allow update: if (isOwner(userId) || isAdmin()) 
+        && (isAdmin() || (isValidUser(incoming()) && incoming().role == existing().role)); // Cannot escalate role
       allow delete: if false;
 
       // Isolated User Scans

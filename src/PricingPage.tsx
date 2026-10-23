@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { PricingSection } from './PricingSection';
 import { Icon } from './components';
 import { WaitlistModal } from './WaitlistModal';
+import { UserHeaderMenu } from './UserHeaderMenu';
 
 export function PricingPage() {
   return (
@@ -16,8 +17,11 @@ export function PricingPage() {
         <nav className="desktop-nav">
           <Link to="/">Home</Link>
           <Link to="/pricing" style={{ fontWeight: 600, color: 'var(--blue)' }}>Pricing</Link>
-          <Link to="/contact">Contact Us</Link>
-          <Link to="/workspace" className="header-workspace-link">Go to Workspace</Link>
+          <Link to="/contact">Contact</Link>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
+          <UserHeaderMenu />
+          <Link to="/workspace" className="header-workspace-link">Go to Workspace →</Link>
         </nav>
       </header>
 
@@ -96,6 +100,8 @@ export function PricingPage() {
           <Link to="/">Home</Link>
           <Link to="/pricing">Pricing</Link>
           <Link to="/contact">Contact Us</Link>
+          <Link to="/privacy">Privacy Policy</Link>
+          <Link to="/terms">Terms of Service</Link>
           <Link to="/workspace">Workspace</Link>
         </nav>
         <p className="subtle">Sentinel Digital Security Companion</p>

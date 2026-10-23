@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
-import { fetchActivityLogs, fetchAllUsersForAdmin, type ActivityLog, type UserProfile } from './firebase';
+import { fetchActivityLogs, fetchAllUsersForAdmin, adminUpdateUserProfile, type ActivityLog, type UserProfile } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import { Icon } from './components';
@@ -56,14 +56,10 @@ export function AdminPanel() {
 
   if (!isAdmin) {
     return (
-      <main className="not-found" id="main-content" style={{ padding: '4rem 1.5rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#f87171' }}>404 — Access Restricted</h1>
-        <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>
-          This route does not exist or you lack authorization to view this nexus.
-        </p>
-        <a className="button" href="/workspace" style={{ display: 'inline-block' }}>
-          Back to Workspace
-        </a>
+      <main className="not-found" id="main-content">
+        <h1>This page isn’t here.</h1>
+        <p>Find a clearer next step in the workspace.</p>
+        <a className="button" href="/">Back to Sentinel</a>
       </main>
     );
   }
@@ -389,15 +385,20 @@ export function AdminPanel() {
                       </td>
                       <td style={{ padding: '0.85rem 1rem' }}>
                         <span style={{
-                          background: 'rgba(59, 130, 246, 0.2)',
-                          color: '#60a5fa',
+                          background: u.accountStatus === 'pending_deletion' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                          color: u.accountStatus === 'pending_deletion' ? '#f87171' : '#60a5fa',
                           padding: '0.2rem 0.5rem',
                           borderRadius: '4px',
                           fontSize: '0.75rem',
                           fontWeight: 700
                         }}>
-                          {u.role || 'builder'}
+                          {u.accountStatus === 'pending_deletion' ? 'Pending Deletion' : (u.role || 'builder')}
                         </span>
+                        {u.accountStatus === 'pending_deletion' && u.scheduledHardDeleteAt && (
+                          <div style={{ fontSize: '0.7rem', color: '#f87171', marginTop: '2px' }}>
+                            Purge: {new Date(u.scheduledHardDeleteAt).toLocaleDateString()}
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: '0.85rem 1rem', color: '#9ca3af' }}>
                         {new Date(u.createdAt).toLocaleDateString()}
@@ -471,12 +472,12 @@ export function AdminPanel() {
         </div>
       )}
 
-      {/* Modal for User Scans Inspection */}
+      {/* Modal for User Management & Scans Inspection */}
       {selectedUser && (
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
+          background: 'rgba(0,0,0,0.85)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -487,26 +488,124 @@ export function AdminPanel() {
             background: '#18181b',
             border: '1px solid #3f3f46',
             borderRadius: '16px',
-            maxWidth: '650px',
+            maxWidth: '700px',
             width: '100%',
-            maxHeight: '80vh',
+            maxHeight: '90vh',
             overflowY: 'auto',
-            padding: '1.5rem'
+            padding: '2rem'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#f3f4f6' }}>
-                User Scans: {selectedUser.email}
-              </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #27272a', paddingBottom: '1rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#f3f4f6' }}>
+                  Manage User: {selectedUser.displayName || selectedUser.email}
+                </h3>
+                <p style={{ margin: '0.2rem 0 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>
+                  UID: <code style={{ color: '#38bdf8' }}>{selectedUser.uid}</code>
+                </p>
+              </div>
               <button
                 onClick={() => setSelectedUser(null)}
-                style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '1.2rem' }}
+                style={{ background: '#27272a', border: '1px solid #3f3f46', color: '#f3f4f6', cursor: 'pointer', fontSize: '1rem', padding: '0.4rem 0.8rem', borderRadius: '6px' }}
               >
-                ✕
+                ✕ Close
               </button>
             </div>
 
+            {/* Admin Action Controls */}
+            <div style={{ background: '#09090b', border: '1px solid #27272a', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem', display: 'grid', gap: '1rem' }}>
+              <div style={{ fontWeight: 700, color: '#facc15', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                ⚡ Administrative Service Overrides
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
+                    User Service Tier
+                  </label>
+                  <select
+                    defaultValue={(selectedUser as any).tier || 'free'}
+                    onChange={async (e) => {
+                      const newTier = e.target.value;
+                      await adminUpdateUserProfile(selectedUser.uid, { tier: newTier });
+                      setSelectedUser({ ...selectedUser, tier: newTier } as any);
+                      loadAdminData();
+                    }}
+                    style={{ width: '100%', background: '#18181b', color: '#f9fafb', border: '1px solid #3f3f46', padding: '0.5rem', borderRadius: '8px', fontSize: '0.875rem' }}
+                  >
+                    <option value="free">Free Tier ($0)</option>
+                    <option value="pro">Pro Tier ($15/mo)</option>
+                    <option value="lifetime">Founding Lifetime ($149)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
+                    Access Status
+                  </label>
+                  <button
+                    onClick={async () => {
+                      const currentSuspended = (selectedUser as any).isSuspended || false;
+                      const nextSuspended = !currentSuspended;
+                      await adminUpdateUserProfile(selectedUser.uid, { isSuspended: nextSuspended });
+                      setSelectedUser({ ...selectedUser, isSuspended: nextSuspended } as any);
+                      loadAdminData();
+                    }}
+                    style={{
+                      width: '100%',
+                      background: (selectedUser as any).isSuspended ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                      color: (selectedUser as any).isSuspended ? '#4ade80' : '#f87171',
+                      border: `1px solid ${(selectedUser as any).isSuspended ? 'rgba(74, 222, 128, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                      padding: '0.5rem',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    {(selectedUser as any).isSuspended ? '✓ Grant Access / Reinstate' : '🚫 Revoke Access / Suspend'}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
+                  Grant Bonus Companion Prompts / Scans
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={async () => {
+                      const currentBonus = (selectedUser as any).bonusScans || 0;
+                      const updated = currentBonus + 10;
+                      await adminUpdateUserProfile(selectedUser.uid, { bonusScans: updated });
+                      setSelectedUser({ ...selectedUser, bonusScans: updated } as any);
+                      loadAdminData();
+                    }}
+                    style={{ background: '#27272a', color: '#38bdf8', border: '1px solid #3f3f46', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    +10 Bonus Scans
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const currentBonusMsgs = (selectedUser as any).bonusMessages || 0;
+                      const updated = currentBonusMsgs + 100;
+                      await adminUpdateUserProfile(selectedUser.uid, { bonusMessages: updated });
+                      setSelectedUser({ ...selectedUser, bonusMessages: updated } as any);
+                      loadAdminData();
+                    }}
+                    style={{ background: '#27272a', color: '#a855f7', border: '1px solid #3f3f46', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    +100 Companion Messages
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <h4 style={{ fontSize: '1rem', color: '#f3f4f6', marginBottom: '0.75rem' }}>
+              Executed Security Scans ({(userScansMap[selectedUser.uid] || []).length})
+            </h4>
+
             {(userScansMap[selectedUser.uid] || []).length === 0 ? (
-              <p style={{ color: '#6b7280', textAlign: 'center', padding: '2rem 0' }}>
+              <p style={{ color: '#6b7280', textAlign: 'center', padding: '1.5rem 0' }}>
                 This user has not executed any web security scans yet.
               </p>
             ) : (

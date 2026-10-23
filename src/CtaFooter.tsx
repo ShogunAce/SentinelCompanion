@@ -36,10 +36,25 @@ export const CtaFooter = () => {
             <div className="f-col"><h4>Product</h4><a href="#how-it-works">How it works</a><a href="#report">Sample report</a><Link to="/pricing">Pricing</Link><a href="#coverage">Coverage</a></div>
             <div className="f-col"><h4>Workspace</h4><Link to="/workspace">Open workspace</Link><Link to="/workspace/new-scan">New scan</Link><Link to="/workspace/reports">Reports</Link></div>
             <div className="f-col"><h4>Company</h4><Link to="/contact">Contact</Link><a href="#faq">FAQ</a><Link to="/workspace/coverage">Scope</Link></div>
+            <div className="f-col">
+              <h4>Privacy &amp; Trust</h4>
+              <Link to="/privacy">Privacy Policy</Link>
+              <Link to="/terms">Terms of Service</Link>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('sentinel:open-cookie-preferences'))}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+              >
+                Cookie Preferences
+              </button>
+              <Link to="/workspace">Account Data Portal</Link>
+              <a href="/assets/aistudio/Sentinel-privacy_0e5aae6a.pdf" download="Sentinel-Privacy-Policy.pdf">Privacy Policy (PDF)</a>
+              <a href="/assets/aistudio/Sentinel-ToS_6e45ad51.pdf" download="Sentinel-Terms-of-Service.pdf">Terms of Service (PDF)</a>
+            </div>
           </div>
           <div className="f-bottom">
-            <span>&copy; 2026 Sentinel. Digital security companion for vibecoded apps.</span>
-            <span className="mono">Passive · Polite · Plain English</span>
+            <span>&copy; 2026 Sentinel. Digital cybersecurity companion for vibecoded apps.</span>
+            <span className="mono">Passive · Polite · Plain English · Zero-Trust</span>
           </div>
         </footer>
       </div>

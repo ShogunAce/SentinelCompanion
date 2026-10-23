@@ -4,24 +4,47 @@ import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-do
 import LandingPage from './LandingPage';
 import { PricingPage } from './PricingPage';
 import { ContactPage } from './ContactPage';
+import { PrivacyPage } from './PrivacyPage';
+import { TermsPage } from './TermsPage';
 import { ActionPlanPage, CompanionPage, CoveragePage, NewScanPage, OverviewPage, ReportLayoutPage, ReportsPage, WorkspaceLayout } from './Workspace';
 import { AdminPanel } from './AdminPanel';
+import { DraggableCompanionWidget } from './DraggableCompanionWidget';
+import { CookieConsentBanner } from './CookieConsentBanner';
 import './styles.css';
 import './theme.css';
-import { AuthProvider } from './AuthContext';
+import './companionWidget.css';
+import { AuthProvider, useAuth } from './AuthContext';
 import { UsageProvider } from './UsageContext';
+import { useNavigate } from 'react-router-dom';
+
+function SignupRoute() {
+  const { openAuthModal, user } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (user) {
+      navigate('/workspace');
+    } else {
+      openAuthModal('signup');
+    }
+  }, [user, openAuthModal, navigate]);
+  return <LandingPage value="" onChange={() => {}} />;
+}
 
 function RouteEffects() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
     document.title = pathname === '/'
-      ? 'Sentinel — Digital Security Companion for Vibecoded Apps'
+      ? 'Sentinel — Digital Cybersecurity Companion for Vibecoded Apps'
       : pathname === '/pricing'
       ? 'Sentinel — Honest Pricing & Plans'
       : pathname === '/contact'
       ? 'Sentinel — Contact Security Team'
-      : pathname === '/ops-nexus-903f'
+      : pathname === '/privacy'
+      ? 'Sentinel — Privacy Policy'
+      : pathname === '/terms' || pathname === '/tos'
+      ? 'Sentinel — Terms of Service'
+      : pathname === '/ops-nexus-903f' || pathname === '/admin'
       ? 'Sentinel — Ops Command'
       : 'Sentinel — Security Workspace';
     const main = document.querySelector<HTMLElement>('main');
@@ -47,6 +70,10 @@ function App() {
             <Route path="/" element={<LandingPage {...form} />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/tos" element={<TermsPage />} />
+            <Route path="/signup" element={<SignupRoute />} />
             <Route path="/workspace" element={<WorkspaceLayout />}>
               <Route index element={<OverviewPage />} />
               <Route path="companion" element={<CompanionPage />} />
@@ -56,7 +83,8 @@ function App() {
               <Route path="action-plan" element={<ActionPlanPage />} />
               <Route path="coverage" element={<CoveragePage />} />
             </Route>
-            {/* Non-standard secret admin URL */}
+            {/* Hardened admin paths: strictly checks admin email; otherwise renders standard 404 */}
+            <Route path="/admin" element={<AdminPanel />} />
             <Route path="/ops-nexus-903f" element={<AdminPanel />} />
             <Route
               path="*"
@@ -69,6 +97,10 @@ function App() {
               }
             />
           </Routes>
+
+          {/* Freely movable robot companion widget & global cookie compliance */}
+          <DraggableCompanionWidget />
+          <CookieConsentBanner />
         </BrowserRouter>
       </UsageProvider>
     </AuthProvider>

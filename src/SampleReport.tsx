@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { FindingPayload } from './ReportBreakdownModal';
+import { companionEvents } from './companionState';
 import './sampleReport.css';
 
 // Interactive security report. Renders the built-in sample, or a live result from /api/scan
@@ -323,11 +324,29 @@ export function SampleReport({ data = SAMPLE_REPORT, botSrc = '/sentinel-bot-512
                       <div className="sr-act">
                         {f.action && <p><strong>Recommended action:</strong> {f.action}</p>}
                         <div className="sr-act-r">
-                          {onBreakdown && (
-                            <button className="sr-bd" type="button" onClick={() => onBreakdown({ title: f.title, severity: f.severity.toLowerCase() as FindingPayload['severity'],description: f.description, evidence: f.evidence || f.action })}>
-                              Break down with Gemini →
-                            </button>
-                          )}
+                          <button
+                            className="sr-bd"
+                            type="button"
+                            onClick={() => {
+                              const payload: FindingPayload = {
+                                title: f.title,
+                                severity: f.severity.toLowerCase() as FindingPayload['severity'],
+                                description: f.description,
+                                evidence: f.evidence || f.action || '',
+                              };
+                              companionEvents.breakdown({
+                                title: payload.title,
+                                severity: payload.severity,
+                                description: payload.description,
+                                evidence: payload.evidence,
+                                action: f.action,
+                                appUrl: data.origin,
+                              });
+                              if (onBreakdown) onBreakdown(payload);
+                            }}
+                          >
+                            Break down with Pip →
+                          </button>
                           <button className="sr-toggle" type="button" aria-pressed={isFixed} onClick={() => setFixed(s => toggle(s, f.id))}><span className="sr-sw" aria-hidden="true" />Mark as fixed</button>
                         </div>
                       </div>

@@ -1,83 +1,80 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import { AuthModal } from './AuthModal';
+import { PrivacySettingsModal } from './PrivacySettingsModal';
 import { Icon } from './components';
 
-const ADMIN_EMAILS = ['coleslaysolutions@gmail.com', 'coleduane96@gmail.com'];
-
 export function UserHeaderMenu() {
-  const { user, profile, logout } = useAuth();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const { user, profile, logout, openAuthModal } = useAuth();
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
 
   if (!user) {
     return (
-      <>
-        <button
-          className="button small"
-          onClick={() => setAuthModalOpen(true)}
-          type="button"
-        >
-          Sign in
-          <Icon name="arrow" />
-        </button>
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
-        />
-      </>
+      <button
+        className="button small"
+        onClick={() => openAuthModal('signin')}
+        type="button"
+      >
+        Sign in
+        <Icon name="arrow" />
+      </button>
     );
   }
 
   const initial = (profile?.displayName || user.email || 'U').charAt(0).toUpperCase();
-  const isAdmin = user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   return (
-    <div className="user-menu" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-      <div className="user-avatar" title={profile?.email || user.email || ''}>
-        {profile?.photoURL ? (
-          <img src={profile.photoURL} alt="" />
-        ) : (
-          <span>{initial}</span>
-        )}
-      </div>
-      <div className="user-badge">
-        <span className="user-name">{profile?.displayName || 'Vibe Builder'}</span>
-        <span className="user-role" style={{ color: isAdmin ? '#ef4444' : '#9ca3af', fontWeight: isAdmin ? 700 : 400 }}>
-          {isAdmin ? 'System Admin' : 'Authenticated Builder'}
-        </span>
-      </div>
+    <>
+      <div className="user-menu" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className="user-avatar" title={profile?.email || user.email || ''}>
+          {profile?.photoURL ? (
+            <img src={profile.photoURL} alt="" />
+          ) : (
+            <span>{initial}</span>
+          )}
+        </div>
+        <div className="user-badge">
+          <span className="user-name">{profile?.displayName || 'Vibe Builder'}</span>
+          <span className="user-role" style={{ color: '#64748b', fontSize: '11px' }}>
+            {profile?.accountStatus === 'pending_deletion' ? '⚠️ Deletion Pending' : 'Verified Builder'}
+          </span>
+        </div>
 
-      {isAdmin && (
-        <Link
-          to="/ops-nexus-903f"
+        <button
+          type="button"
+          onClick={() => setPrivacyModalOpen(true)}
+          title="Manage data privacy, export records, or request deletion"
           style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            color: '#f87171',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            padding: '0.3rem 0.6rem',
+            background: '#f1f5f9',
+            border: '1px solid #cbd5e1',
             borderRadius: '6px',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            textDecoration: 'none',
+            padding: '4px 8px',
+            fontSize: '11px',
+            fontWeight: 600,
+            color: '#334155',
+            cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.25rem'
+            gap: '4px',
           }}
-          title="Open Admin Operations Console"
         >
-          Ops Console
-        </Link>
-      )}
+          <span style={{ fontSize: '11px' }}>🛡️</span>
+          <span>Privacy &amp; Data</span>
+        </button>
 
-      <button
-        className="text-button"
-        onClick={() => logout()}
-        title="Sign out"
-        type="button"
-      >
-        Sign out
-      </button>
-    </div>
+        <button
+          className="text-button"
+          onClick={() => logout()}
+          title="Sign out"
+          type="button"
+        >
+          Sign out
+        </button>
+      </div>
+
+      <PrivacySettingsModal
+        isOpen={privacyModalOpen}
+        onClose={() => setPrivacyModalOpen(false)}
+      />
+    </>
   );
 }

@@ -132,9 +132,15 @@ html.lp-motion .lp .kicker[data-reveal]:not(.in)::before { width: 0; }
 }
 .lp .nav {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(245, 242, 236, 0.72);
+  background: rgba(245, 242, 236, 0.75);
   -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%);
   border-bottom: 1px solid var(--line);
+  transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.lp .nav.is-scrolled {
+  background: rgba(245, 242, 236, 0.94);
+  border-bottom-color: rgba(20, 20, 20, 0.12);
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.12);
 }
 .lp .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 74px; gap: 20px; }
 .lp .lp-brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 19px; letter-spacing: -0.02em; }
@@ -239,6 +245,7 @@ html.lp-motion .lp .kicker[data-reveal]:not(.in)::before { width: 0; }
 .lp .chip.c1 { top: 16%; left: 6%; width: 54px; height: 54px; color: var(--blue); }
 .lp .chip.c2 { top: 12%; right: 8%; width: 48px; height: 48px; color: var(--coral); font-size: 10.5px; }
 .lp .chip.c3 { bottom: 18%; right: 6%; width: 58px; height: 58px; color: var(--ink); }
+.lp .chip.c4 { bottom: 22%; left: 4%; width: 54px; height: 54px; color: #7c3aed; }
 .lp .scroll-hint { position: absolute; left: 50%; bottom: 62px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center; z-index: 3; }
 .lp .scroll-hint svg { width: 42px; height: 22px; overflow: visible; }
 .lp .capsule { width: 24px; height: 38px; border-radius: 99px; border: 1.5px solid rgba(20, 20, 20, 0.22); display: flex; justify-content: center; padding-top: 6px; }
@@ -257,6 +264,7 @@ html.lp-motion .lp .kicker[data-reveal]:not(.in)::before { width: 0; }
 .lp .chip.c1 { animation: lp-chipIn .6s var(--ease) .9s both; }
 .lp .chip.c2 { animation: lp-chipIn .6s var(--ease) 1.05s both; }
 .lp .chip.c3 { animation: lp-chipIn .6s var(--ease) 1.2s both; }
+.lp .chip.c4 { animation: lp-chipIn .6s var(--ease) 1.35s both; }
 @media (max-width: 1100px) {
 .lp .hero-grid { grid-template-columns: 1fr; }
 .lp .mascot-col { justify-content: center; min-height: 0; order: -1; margin-top: 8px; }

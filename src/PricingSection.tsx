@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PLANS, SEATS_CLAIMED } from './plans';
-import { useUsage } from './UsageContext';
+import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Accent, Words } from './landingBits';
 
@@ -8,11 +8,15 @@ import { Accent, Words } from './landingBits';
 // The section carries the .lp scope itself so it is styled on both.
 export function PricingSection() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  const { openWaitlistModal } = useUsage();
+  const { user, openAuthModal } = useAuth();
   const navigate = useNavigate();
 
   const handleFreeClick = () => {
-    navigate('/workspace/new-scan');
+    if (user) {
+      navigate('/workspace/new-scan');
+    } else {
+      openAuthModal('signup');
+    }
   };
 
   return (
@@ -61,7 +65,7 @@ export function PricingSection() {
                 ? 'Save $45 a year when billed annually.'
                 : 'Full coverage for active builders running multiple vibecoded projects.'}
             </p>
-            <button className="btn btn-navy" type="button" onClick={() => openWaitlistModal('pro', billingCycle)}>Join founding access</button>
+            <button className="btn btn-navy" type="button" onClick={() => window.open(PLANS.pro.stripePaymentLink, '_blank')}>Subscribe Pro ($15/mo)</button>
             <ul className="feats">
               <li>{PLANS.pro.apps} connected apps</li>
               <li>{PLANS.pro.scansPerMonth} fresh scans per month</li>
@@ -70,6 +74,7 @@ export function PricingSection() {
               <li>Weekly automated rescan</li>
               <li>All copy-paste fix prompts</li>
               <li>Deep checks, added later after you prove you own the domain</li>
+              <li>Agentic features coming soon</li>
             </ul>
           </article>
 
@@ -78,7 +83,7 @@ export function PricingSection() {
             <h3>{PLANS.lifetime.name}</h3>
             <div className="price"><b>${PLANS.lifetime.price}</b><span>one-time</span></div>
             <p>One payment for founding supporters. Seats claimed: {SEATS_CLAIMED} of {PLANS.lifetime.seatCap}.</p>
-            <button className="btn btn-glass" type="button" onClick={() => openWaitlistModal('lifetime', 'once')}>Join founding access</button>
+            <button className="btn btn-glass" type="button" onClick={() => window.open(PLANS.lifetime.stripePaymentLink, '_blank')}>Buy Lifetime ($149)</button>
             <ul className="feats">
               <li>{PLANS.lifetime.apps} connected apps</li>
               <li>{PLANS.lifetime.scansPerMonth} fresh scans per month</li>
@@ -87,6 +92,7 @@ export function PricingSection() {
               <li>Weekly automated rescan</li>
               <li>All copy-paste fix prompts</li>
               <li>Deep checks, added later after you prove you own the domain</li>
+              <li>Agentic features coming soon</li>
             </ul>
           </article>
         </div>

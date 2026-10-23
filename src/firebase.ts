@@ -91,6 +91,11 @@ export interface UserProfile {
   role: 'builder';
   createdAt: string;
   updatedAt?: string;
+  accountStatus?: 'active' | 'pending_deletion';
+  deletionRequestedAt?: string | null;
+  gracePeriodEndsAt?: string | null;
+  scheduledHardDeleteAt?: string | null;
+  cookieConsent?: any;
 }
 
 export interface ActivityLog {
@@ -204,3 +209,138 @@ export async function loginWithGoogle(): Promise<UserProfile> {
 export async function logoutUser(): Promise<void> {
   await signOut(auth);
 }
+
+/**
+ * GDPR Data Portability & Access (Article 15/20):
+ * Securely exports all user scans, action items, and account profile
+ */
+export async function exportUserData(userId: string): Promise<Record<string, any>> {
+  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+    throw new Error('IDOR Protection: Cannot export data belonging to another user.');
+  }
+
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    const scansSnap = await getDocs(collection(db, 'users', userId, 'scans'));
+    const actionsSnap = await getDocs(collection(db, 'users', userId, 'actionItems'));
+
+    const exportBundle = {
+      exportMetadata: {
+        exportedAt: new Date().toISOString(),
+        userId,
+        standard: 'GDPR Article 15/20 & CCPA Data Portability Export',
+        legalRetentionPolicy: 'Data retention active up to 45 days after verified deletion request fulfillment.',
+      },
+      profile: userSnap.data() || null,
+      scans: scansSnap.docs.map((d) => d.data()),
+      actions: actionsSnap.docs.map((d) => d.data()),
+    };
+
+    await logUserActivity('gdpr_data_exported', { scanCount: exportBundle.scans.length });
+    return exportBundle;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `users/${userId}`);
+  }
+}
+
+/**
+ * GDPR Right to Erasure / Deletion Request (Article 17):
+ * Initiates deletion with a 15-day change-of-mind grace period and 45-day hard purge retention schedule.
+ */
+export async function requestAccountDeletion(userId: string): Promise<{ gracePeriodEndsAt: string; scheduledHardDeleteAt: string }> {
+  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+    throw new Error('IDOR Protection: Unauthorized deletion request.');
+  }
+
+  const now = new Date();
+  const gracePeriod = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000); // 15 days
+  const scheduledHardDelete = new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000); // 45 days
+
+  const userRef = doc(db, 'users', userId);
+  try {
+    await setDoc(userRef, {
+      accountStatus: 'pending_deletion',
+      deletionRequestedAt: now.toISOString(),
+      gracePeriodEndsAt: gracePeriod.toISOString(),
+      scheduledHardDeleteAt: scheduledHardDelete.toISOString(),
+      updatedAt: now.toISOString(),
+    }, { merge: true });
+
+    await logUserActivity('account_deletion_requested', {
+      gracePeriodEndsAt: gracePeriod.toISOString(),
+      scheduledHardDeleteAt: scheduledHardDelete.toISOString(),
+    });
+
+    return {
+      gracePeriodEndsAt: gracePeriod.toISOString(),
+      scheduledHardDeleteAt: scheduledHardDelete.toISOString(),
+    };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `users/${userId}`);
+  }
+}
+
+/**
+ * Cancel Account Deletion within the 15-day grace period
+ */
+export async function cancelAccountDeletion(userId: string): Promise<void> {
+  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+    throw new Error('IDOR Protection: Unauthorized deletion cancellation.');
+  }
+
+  const userRef = doc(db, 'users', userId);
+  try {
+    await setDoc(userRef, {
+      accountStatus: 'active',
+      deletionRequestedAt: null,
+      gracePeriodEndsAt: null,
+      scheduledHardDeleteAt: null,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    await logUserActivity('account_deletion_cancelled', {});
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `users/${userId}`);
+  }
+}
+
+/**
+ * Delete User Scan History directly
+ */
+export async function deleteUserScans(userId: string): Promise<number> {
+  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+    throw new Error('IDOR Protection: Unauthorized scan deletion.');
+  }
+
+  const scansRef = collection(db, 'users', userId, 'scans');
+  try {
+    const snap = await getDocs(scansRef);
+    let count = 0;
+    const { deleteDoc } = await import('firebase/firestore');
+    await Promise.all(
+      snap.docs.map(async (docSnap) => {
+        await deleteDoc(docSnap.ref);
+        count++;
+      })
+    );
+
+    await logUserActivity('user_scans_deleted', { deletedCount: count });
+    return count;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `users/${userId}/scans`);
+  }
+}
+
+/**
+ * Admin: Update user profile (tier, prompt limits, status)
+ */
+export async function adminUpdateUserProfile(userId: string, updates: Record<string, any>): Promise<void> {
+  const userRef = doc(db, 'users', userId);
+  try {
+    await setDoc(userRef, { ...updates, updatedAt: new Date().toISOString() }, { merge: true });
+    await logUserActivity('admin_updated_user', { targetUserId: userId, updates });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `users/${userId}`);
+  }
+}
+

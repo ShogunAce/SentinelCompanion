@@ -8,32 +8,46 @@ import { FaqSection } from './FaqSection';
 import { CtaFooter } from './CtaFooter';
 import { WaitlistModal } from './WaitlistModal';
 import { SampleReport } from './SampleReport';
-import { ReportBreakdownModal } from './ReportBreakdownModal';
-import type { FindingPayload } from './ReportBreakdownModal';
 import { Accent, ShieldMark, Words } from './landingBits';
 import { useLandingMotion } from './useLandingMotion';
 import './landing.css';
 
 const publicLinks = [
   { href: '#how-it-works', label: 'How it works' },
-  { href: '#why', label: 'Why Sentinel' },
-  { href: '#pricing', label: 'Pricing' },
+  { href: '/pricing', label: 'Pricing', isRoute: true },
   { href: '#coverage', label: 'Coverage' },
   { href: '#faq', label: 'FAQ' },
+  { href: '/contact', label: 'Contact', isRoute: true },
 ];
 
 function LandingHeader() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 15);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <header className="nav">
+    <header className={`nav${scrolled ? ' is-scrolled' : ''}`}>
       <div className="wrap">
         <Link className="lp-brand" to="/" aria-label="Sentinel home">
           <ShieldMark />
           <span>Sentinel<span className="dot">.</span></span>
         </Link>
         <nav className="nav-links" aria-label="Website">
-          {publicLinks.map((l) => <a key={l.href} href={l.href}>{l.label}</a>)}
-          <Link to="/contact">Contact</Link>
+          {publicLinks.map((l) =>
+            l.isRoute ? (
+              <Link key={l.href} to={l.href}>{l.label}</Link>
+            ) : (
+              <a key={l.href} href={l.href}>{l.label}</a>
+            )
+          )}
         </nav>
         <div className="nav-actions">
           <UserHeaderMenu />
@@ -43,8 +57,13 @@ function LandingHeader() {
           </button>
         </div>
         <nav className={`mobile-menu${open ? ' open' : ''}`} aria-label="Mobile website" onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setOpen(false); }}>
-          {publicLinks.map((l) => <a key={l.href} href={l.href}>{l.label} <span>→</span></a>)}
-          <Link to="/contact">Contact <span>→</span></Link>
+          {publicLinks.map((l) =>
+            l.isRoute ? (
+              <Link key={l.href} to={l.href}>{l.label} <span>→</span></Link>
+            ) : (
+              <a key={l.href} href={l.href}>{l.label} <span>→</span></a>
+            )
+          )}
           <Link to="/workspace">Open workspace <span>→</span></Link>
         </nav>
       </div>
@@ -322,7 +341,6 @@ function WhySection() {
 
 function ReportSection() {
   const navigate = useNavigate();
-  const [finding, setFinding] = useState<FindingPayload | null>(null);
   return (
     <section className="lp-section band band-white" id="report">
       <div className="wrap">
@@ -334,14 +352,13 @@ function ReportSection() {
           <p className="lede" data-reveal>Open a finding, read it in plain English, copy the exact fix prompt, then flip <strong>Mark as fixed</strong> to watch your grade climb. Try it.</p>
         </div>
         <div data-reveal>
-          <SampleReport onBreakdown={setFinding} onRunScan={() => navigate('/workspace/new-scan')} />
+          <SampleReport onRunScan={() => navigate('/workspace/new-scan')} />
         </div>
         <div className="report-foot">
           <span>Sample data. Every finding, score and prompt matches what a real Sentinel scan returns.</span>
           <Link to="/workspace">Explore the workspace →</Link>
         </div>
       </div>
-      {finding && <ReportBreakdownModal finding={finding} appUrl="https://your-app.com" onClose={() => setFinding(null)} />}
     </section>
   );
 }

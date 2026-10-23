@@ -23,9 +23,9 @@ export function GeminiChat({ initialPrompt = '', onClose, isEmbedded = false }: 
   const { canMessage, recordMessage, currentPlan, openWaitlistModal } = useUsage();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: 'welcome-1',
+      id: 'welcome-pip-main',
       role: 'assistant',
-      content: `Hello ${user?.displayName || 'Builder'}! I'm Sentinel, your AI digital security companion. How can I help audit or harden your vibecoded app today?`,
+      content: `Hello ${user?.displayName || 'Builder'}! I'm Pip, your AI digital cybersecurity companion. How can I help audit or harden your vibecoded app today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -132,7 +132,7 @@ export function GeminiChat({ initialPrompt = '', onClose, isEmbedded = false }: 
         <div className="chat-title">
           <Icon name="shield" />
           <div>
-            <h3>Sentinel AI Companion</h3>
+            <h3>Pip — AI Security Companion</h3>
             <span className="subtle">Powered by Gemini for Vibecoded Apps</span>
           </div>
         </div>

@@ -13,6 +13,7 @@ export interface PlanConfig {
   deepChecks: boolean | 'after-ownership-proof';
   available: boolean;
   seatCap?: number;
+  stripePaymentLink?: string;
 }
 
 export const PLANS: Record<'free' | 'pro' | 'lifetime', PlanConfig> = {
@@ -33,9 +34,10 @@ export const PLANS: Record<'free' | 'pro' | 'lifetime', PlanConfig> = {
   pro: {
     id: 'pro',
     name: 'Pro',
-    price: 12,
+    price: 15,
     period: 'month',
-    annualPrice: 99,
+    annualPrice: 144,
+    stripePaymentLink: 'https://buy.stripe.com/8x2aEX7BB8zf53K1pi4AU0r',
     apps: 5,
     scansPerMonth: 30,
     companionPerMonth: 300,
@@ -43,7 +45,7 @@ export const PLANS: Record<'free' | 'pro' | 'lifetime', PlanConfig> = {
     autoRescan: true,
     fixPrompts: 'all',
     deepChecks: 'after-ownership-proof',
-    available: false,
+    available: true,
   },
   lifetime: {
     id: 'lifetime',
@@ -51,6 +53,7 @@ export const PLANS: Record<'free' | 'pro' | 'lifetime', PlanConfig> = {
     price: 149,
     period: 'once',
     seatCap: 100,
+    stripePaymentLink: 'https://buy.stripe.com/7sY5kD3ll8zf67Oec44AU0q',
     apps: 5,
     scansPerMonth: 30,
     companionPerMonth: 150,
@@ -58,7 +61,7 @@ export const PLANS: Record<'free' | 'pro' | 'lifetime', PlanConfig> = {
     autoRescan: true,
     fixPrompts: 'all',
     deepChecks: 'after-ownership-proof',
-    available: false,
+    available: true,
   },
 };
 

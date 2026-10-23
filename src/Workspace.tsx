@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ActionLink, Brand, Dialog, EmptyState, FilterTabs, Icon, PreviewNote, ScopeContent, ScopeDialog, UrlForm } from './components';
 import type { IconName, UrlFormProps } from './components';
 import { ProtectedWorkspaceGuard } from './ProtectedRoute';
@@ -7,8 +7,6 @@ import { UserHeaderMenu } from './UserHeaderMenu';
 import { useAuth } from './AuthContext';
 import { db, logUserActivity } from './firebase';
 import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
-import { ReportBreakdownModal } from './ReportBreakdownModal';
-import type { FindingPayload } from './ReportBreakdownModal';
 import { GeminiChat } from './GeminiChat';
 import { UsagePanel } from './UsagePanel';
 import { useUsage } from './UsageContext';
@@ -18,7 +16,7 @@ import './workspace.css';
 
 const destinations: { path: string; label: string; icon: IconName }[] = [
   { path: '/workspace', label: 'Overview', icon: 'overview' },
-  { path: '/workspace/companion', label: 'AI Companion', icon: 'shield' },
+  { path: '/workspace/companion', label: 'Pip Companion', icon: 'shield' },
   { path: '/workspace/new-scan', label: 'New scan', icon: 'plus' },
   { path: '/workspace/reports', label: 'Reports', icon: 'report' },
   { path: '/workspace/action-plan', label: 'Action plan', icon: 'plan' },
@@ -42,9 +40,9 @@ export function WorkspaceLayout() {
         <WorkspaceNav/>
         <SidebarUsage/>
         <div className="sidebar-bottom">
-          <p>Digital companion. Secure vibe coding.</p>
+          <p>Pip — Digital companion. Secure vibe coding.</p>
           <span>Gemini AI Powered</span>
-          <img src="/sentinel-bot-512.webp" alt=""/>
+          <img src="/sentinel-bot-512.webp" alt="Pip Robot Mascot"/>
         </div>
       </aside>
 
@@ -66,7 +64,7 @@ export function WorkspaceLayout() {
               style={{ gap: '8px' }}
             >
               <Icon name="shield" />
-              {chatOpen ? 'Close Companion' : 'Talk to Gemini'}
+              {chatOpen ? 'Close Pip' : 'Talk to Pip'}
             </button>
             <UserHeaderMenu />
             <button className="icon-button" onClick={() => setScope(true)} aria-label="View scope and limitations">
@@ -128,8 +126,8 @@ export function CompanionPage() {
     <>
       <PageHeading
         eyebrow="Gemini AI Security Co-Pilot"
-        title={<>Talk to your <em>digital companion.</em></>}
-        description="Ask Sentinel anything about your vibecoded app's security, break down findings, or generate targeted prompts for Cursor, Lovable, and Bolt."
+        title={<>Talk to Pip, your <em>digital companion.</em></>}
+        description="Ask Pip anything about your vibecoded app's security, break down findings, or generate targeted prompts for Cursor, Lovable, Bolt, and v0."
       />
       <GeminiChat isEmbedded />
     </>
@@ -138,14 +136,13 @@ export function CompanionPage() {
 
 export function OverviewPage() {
   const navigate = useNavigate();
-  const [finding, setFinding] = useState<FindingPayload | null>(null);
   return (
     <>
       <PageHeading
         eyebrow="Digital Security Companion"
-        title={<>Understand &amp; <em>fix</em> your vibecoded app.</>}
+        title={<>Understand &amp; <em>fix</em> your vibecoded app with Pip.</>}
         description="Audit AI-generated code for cybersecurity vulnerabilities, catch logic flaws early, and generate targeted prompt fixes for your builder."
-        action={<ActionLink to="/workspace/companion">Talk to Gemini AI</ActionLink>}
+        action={<ActionLink to="/workspace/companion">Talk to Pip</ActionLink>}
       />
 
       {/* Plan and Usage Meters Panel */}
@@ -158,13 +155,13 @@ export function OverviewPage() {
             <Link className="text-link" to="/workspace/reports/layout">Full layout<Icon name="arrow"/></Link>
           </div>
           <div className="overview-sample">
-            <SampleReport onBreakdown={setFinding} onRunScan={() => navigate('/workspace/new-scan')} />
+            <SampleReport onRunScan={() => navigate('/workspace/new-scan')} />
           </div>
         </section>
 
         <section className="surface overview-plan">
           <div className="surface-heading">
-            <h2>AI Companion Capabilities</h2>
+            <h2>Pip Companion Capabilities</h2>
             <Icon name="plan"/>
           </div>
           <div style={{ padding: '24px' }}>
@@ -207,7 +204,6 @@ export function OverviewPage() {
         <Link className="text-link" to="/workspace/coverage">Explore coverage<Icon name="arrow"/></Link>
       </section>
       <PreviewNote>The sample report uses illustrative findings. Run a scan to see your own.</PreviewNote>
-      {finding && <ReportBreakdownModal finding={finding} appUrl="https://your-app.com" onClose={() => setFinding(null)} />}
     </>
   );
 }
@@ -240,11 +236,15 @@ function ScanProgress({ url }: { url: string }) {
 export function NewScanPage(props: UrlFormProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const targetParam = searchParams.get('target');
+  const autoParam = searchParams.get('auto');
+  const hasAutoScannedRef = useRef(false);
+
   const { canScan, recordScan, resetDate, currentPlan, openWaitlistModal } = useUsage();
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanReport, setScanReport] = useState<any | null>(null);
-  const [selectedFinding, setSelectedFinding] = useState<FindingPayload | null>(null);
   const [scannedUrl, setScannedUrl] = useState('');
 
   const handleRunScan = async (targetUrl: string) => {
@@ -305,6 +305,16 @@ export function NewScanPage(props: UrlFormProps) {
     }
   };
 
+  useEffect(() => {
+    if (targetParam) {
+      props.onChange(targetParam);
+      if (autoParam === 'true' && !hasAutoScannedRef.current) {
+        hasAutoScannedRef.current = true;
+        handleRunScan(targetParam);
+      }
+    }
+  }, [targetParam, autoParam]);
+
   return (
     <>
       <PageHeading
@@ -364,7 +374,6 @@ export function NewScanPage(props: UrlFormProps) {
             <div className="scan-result">
               <SampleReport
                 data={fromScanResponse(scanReport, scannedUrl || props.value)}
-                onBreakdown={setSelectedFinding}
                 openFirst
               />
             </div>
@@ -386,14 +395,6 @@ export function NewScanPage(props: UrlFormProps) {
           <p>Zero intrusive probing, strictly follows robots.txt, respects in-memory host pacing, and uses strict SSRF IP filters.</p>
         </aside>
       </div>
-
-      {selectedFinding && (
-        <ReportBreakdownModal
-          finding={selectedFinding}
-          appUrl={scanReport?.origin || scanReport?.target?.origin || scannedUrl || props.value}
-          onClose={() => setSelectedFinding(null)}
-        />
-      )}
     </>
   );
 }
@@ -535,13 +536,11 @@ export function ReportsPage() {
 }
 export function ReportLayoutPage() {
   const navigate = useNavigate();
-  const [finding, setFinding] = useState<FindingPayload | null>(null);
   return <>
     <Link className="text-link back-to-reports" to="/workspace/reports">← Back to reports</Link>
     <PageHeading eyebrow="Sample Security Audit" title={<>Report layout <em>preview.</em></>} description="Preview how Sentinel organizes cybersecurity vulnerabilities, impact analysis, and builder prompt fixes. Open a finding and try marking it fixed."/>
-    <SampleReport onBreakdown={setFinding} onRunScan={() => navigate('/workspace/new-scan')}/>
+    <SampleReport onRunScan={() => navigate('/workspace/new-scan')}/>
     <PreviewNote>Layout preview only. No app has been assessed.</PreviewNote>
-    {finding && <ReportBreakdownModal finding={finding} appUrl="https://your-app.com" onClose={() => setFinding(null)} />}
   </>;
 }
 export function ActionPlanPage() { const [filter, setFilter] = useState('All'); return <><PageHeading eyebrow="Fix Prompt Library" title={<>Targeted AI builder <em>prompts.</em></>} description="Copy-paste prompts generated by Sentinel to patch security flaws directly in Cursor, Lovable, Bolt, v0, or AI Studio."/><section className="surface action-library"><div className="surface-heading"><FilterTabs items={['All', 'To review', 'Applied']} label="Action status" value={filter} onChange={setFilter}/><span className="subtle">Builder guidance</span></div><div aria-live="polite"><EmptyState icon="plan" title="No fix prompts queued." action={<ActionLink to="/workspace/new-scan" secondary>Go to new scan</ActionLink>}>Actionable AI prompts to fix security flaws will appear here after a scan.</EmptyState>{filter !== 'All' && <p className="filter-note">{filter === 'Applied' ? 'Applied fix prompts will be shown here when available.' : 'Fix prompts awaiting review will be shown here when available.'}</p>}</div></section><div className="action-note"><Icon name="info"/><p>Applying a prompt fix will still require review and verification.<br/><span className="subtle">A builder prompt is a starting point, not proof that a concern has been resolved.</span></p></div></>; }
