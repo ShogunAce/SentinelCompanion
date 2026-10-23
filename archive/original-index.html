@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel</title>
+<meta name="description" content="Check the app you built with an AI tool for the most common security problems, explained in plain English.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0D10;
+    --panel: #14171C;
+    --panel-2: #1A1E24;
+    --line: #262B33;
+    --text: #E6E8EB;
+    --muted: #8B929C;
+    --critical: #E5484D;
+    --warning: #F5A524;
+    --minor: #4C8DF6;
+    --pass: #30A46C;
+    --s1: 8px;
+    --s2: 16px;
+    --s3: 24px;
+    --s6: 48px;
+    --radius: 10px;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  .shell { max-width: 920px; margin: 0 auto; padding: 0 var(--s3); }
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--s3) 0;
+  }
+  .brand { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+  .link-btn {
+    background: none; border: 0; padding: 4px 0; color: var(--muted);
+    font-size: 14px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .link-btn:hover { color: var(--text); }
+
+  /* ---------- Input view ---------- */
+  .view { padding-bottom: var(--s6); }
+  h1 { font-size: 34px; line-height: 1.15; letter-spacing: -0.02em; margin: var(--s2) 0 var(--s1); font-weight: 700; }
+  .lede { color: var(--muted); margin: 0 0 var(--s6); font-size: 17px; }
+  .tabs { display: flex; gap: var(--s1); border-bottom: 1px solid var(--line); margin-bottom: var(--s3); }
+  .tab {
+    background: none; border: 0; border-bottom: 2px solid transparent;
+    padding: 10px 4px; margin-right: var(--s2); margin-bottom: -1px;
+    color: var(--muted); font-weight: 500;
+  }
+  .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--text); }
+  textarea#source {
+    width: 100%; height: clamp(160px, 36vh, 400px); resize: vertical;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: var(--s2); font-family: var(--mono); font-size: 13px; line-height: 1.6;
+  }
+  textarea#source::placeholder { font-family: var(--sans); color: var(--muted); font-size: 15px; }
+  .field-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin-top: var(--s1); min-height: 20px; }
+  label.lbl { display: block; font-weight: 500; margin-bottom: var(--s1); }
+  input.text {
+    width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px var(--s2); font-size: 16px;
+  }
+  .hint { color: var(--muted); font-size: 14px; margin: var(--s1) 0 0; }
+  .actions { display: flex; align-items: center; gap: var(--s3); margin-top: var(--s3); flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--pass); color: #fff; border: 0; border-radius: var(--radius);
+    padding: 14px 28px; font-weight: 600; font-size: 16px;
+  }
+  .btn-primary:disabled { background: var(--panel-2); color: var(--muted); }
+  .btn {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 10px 18px; font-weight: 500; font-size: 15px;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .notice {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: var(--s2) var(--s3); margin-top: var(--s3);
+  }
+  .notice strong { display: block; margin-bottom: 4px; }
+  .notice p { margin: 0; color: var(--muted); }
+  .notice .actions { margin-top: var(--s2); }
+  .foot-note { color: var(--muted); font-size: 13px; margin-top: var(--s6); }
+
+  /* ---------- Scanning view ---------- */
+  .agents { list-style: none; margin: var(--s6) 0 0; padding: 0; display: grid; gap: var(--s2); }
+  .agent {
+    display: grid; grid-template-columns: 32px 1fr; gap: var(--s2); align-items: start;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: var(--s3);
+  }
+  .agent-icon { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; margin-top: 2px; }
+  .agent-name { font-weight: 600; font-size: 18px; }
+  .agent-desc { color: var(--muted); font-size: 15px; }
+  .agent-status { margin-top: var(--s1); font-size: 14px; font-weight: 500; color: var(--muted); }
+  .agent[data-state="running"] .agent-icon { border-color: var(--text); }
+  .agent[data-state="running"] .agent-status { color: var(--text); }
+  .agent[data-state="running"] .agent-status::after { content: ""; display: inline-block; width: 1.5em; text-align: left; animation: dots 1.2s steps(4, end) infinite; }
+  @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+  .agent[data-state="done"] .agent-icon { border-color: var(--pass); background: var(--pass); }
+  .agent[data-state="done"] .agent-status { color: var(--pass); }
+  .agent[data-state="fallback"] .agent-icon { border-color: var(--muted); }
+
+  /* ---------- Report view ---------- */
+  .summary {
+    display: grid; grid-template-columns: auto 1fr; gap: var(--s6); align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: var(--s3) var(--s6) var(--s3) var(--s3); margin-top: var(--s2);
+  }
+  .grade-block { display: flex; align-items: center; gap: var(--s3); }
+  .grade-letter { font-size: 96px; font-weight: 700; line-height: 1; letter-spacing: -0.04em; min-width: 72px; }
+  .grade-score { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .grade-score small { color: var(--muted); font-size: 16px; font-weight: 500; }
+  .grade-caption { color: var(--muted); font-size: 14px; }
+  .counts { display: flex; gap: var(--s6); justify-content: flex-end; }
+  .count-num { font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .count-lbl { font-size: 14px; font-weight: 500; }
+  .sev-critical { color: var(--critical); }
+  .sev-warning { color: var(--warning); }
+  .sev-minor { color: var(--minor); }
+  .sev-pass { color: var(--pass); }
+  .count.zero .count-num, .count.zero .count-lbl { color: var(--muted); }
+
+  .group { margin-top: var(--s6); }
+  .group-title { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 var(--s2); }
+  .cards { display: grid; gap: var(--s2); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--line);
+    border-radius: var(--radius); padding: var(--s3);
+  }
+  .card.critical { border-left-color: var(--critical); }
+  .card.warning { border-left-color: var(--warning); }
+  .card.minor { border-left-color: var(--minor); }
+  .card.clean { border-left-color: var(--pass); }
+  .card h3 { font-size: 20px; line-height: 1.4; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .attacker { margin: var(--s2) 0 0; color: var(--text); }
+  .attacker b { color: var(--critical); font-weight: 600; }
+  .evidence { margin-top: var(--s2); }
+  .evidence-lbl { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+  .evidence code {
+    display: block; font-family: var(--mono); font-size: 13px; line-height: 1.6;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 10px 12px; white-space: pre-wrap; word-break: break-all;
+  }
+  .card .actions { margin-top: var(--s2); }
+  .report-foot {
+    position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--line);
+    padding: 12px 0; margin-top: var(--s3); font-size: 13px;
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  }
+  .report-foot p { margin: 0; color: var(--muted); max-width: 620px; }
+  .report-foot .btn { flex: none; }
+  #view-report { padding-bottom: 0; }
+
+  /* ---------- Modals ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: grid; place-items: center; padding: var(--s3); z-index: 10; }
+  .modal {
+    width: 100%; max-width: 560px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: var(--s3);
+  }
+  .modal h2 { font-size: 20px; margin: 0 0 var(--s1); }
+  .modal .sub { color: var(--muted); margin: 0 0 var(--s3); font-size: 15px; }
+  .prompt-box {
+    font-family: var(--mono); font-size: 14px; line-height: 1.65; background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: var(--s2); white-space: pre-wrap; min-height: 96px;
+  }
+  .prompt-box.waiting { font-family: var(--sans); color: var(--muted); }
+  .modal .actions { justify-content: flex-end; }
+  .modal-note { color: var(--muted); font-size: 13px; margin: var(--s2) 0 0; }
+
+  @media (max-width: 680px) {
+    h1 { font-size: 26px; }
+    .shell { padding: 0 16px; }
+    .summary { grid-template-columns: 1fr; gap: var(--s3); padding: var(--s3); }
+    .counts { justify-content: flex-start; gap: var(--s3); }
+    .grade-letter { font-size: 72px; }
+    .report-foot { flex-direction: column; align-items: stretch; gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .agent[data-state="running"] .agent-status::after { animation: none; content: "..."; }
+  }
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand">Sentinel</div>
+    <button class="link-btn" id="open-settings" type="button">AI settings</button>
+  </header>
+
+  <!-- ===================== 1. INPUT VIEW ===================== -->
+  <main id="view-input" class="view">
+    <h1>Is your app leaking anything it shouldn't?</h1>
+    <p class="lede">Paste your app's code and Sentinel will spot the most common security slip-ups in apps made with Lovable, Bolt, Replit, or AI Studio, then tell you how to fix them.</p>
+
+    <div class="tabs" role="tablist" aria-label="How to give Sentinel your app">
+      <button class="tab" role="tab" id="tab-paste" aria-controls="panel-paste" aria-selected="true" type="button">Paste Source</button>
+      <button class="tab" role="tab" id="tab-url" aria-controls="panel-url" aria-selected="false" tabindex="-1" type="button">Scan URL</button>
+    </div>
+
+    <section id="panel-paste" role="tabpanel" aria-labelledby="tab-paste">
+      <label for="source" class="lbl" hidden>Your app's code</label>
+      <textarea id="source" spellcheck="false" autocomplete="off"
+        placeholder="Paste your app's code here. In your AI builder, open the code view, select everything in your main file (often index.html, App.tsx or main.js), copy it, and paste it here."></textarea>
+      <div class="field-meta">
+        <button class="link-btn" id="load-demo" type="button">Load Demo App</button>
+        <span id="source-size"></span>
+      </div>
+    </section>
+
+    <section id="panel-url" role="tabpanel" aria-labelledby="tab-url" hidden>
+      <label for="url" class="lbl">Your app's web address</label>
+      <input id="url" class="text" type="url" inputmode="url" placeholder="https://my-app.lovable.app" autocomplete="off" spellcheck="false">
+      <p class="hint">Sentinel asks a free public relay service to download your app's public page, since browsers can't do that directly. Your address is shared with that relay. Pasting your code works more reliably.</p>
+    </section>
+
+    <div id="input-error" class="notice" role="alert" hidden>
+      <strong id="input-error-title"></strong>
+      <p id="input-error-body"></p>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="run-scan" type="button" disabled>Run Security Scan</button>
+    </div>
+
+    <p class="foot-note">Your code stays in this browser. The only thing sent out is a short list of the problems found (with any keys partly hidden), which goes to Google's Gemini AI so it can explain them in plain English.</p>
+  </main>
+
+  <!-- ===================== 2. SCANNING VIEW ===================== -->
+  <main id="view-scan" class="view" hidden>
+    <h1>Checking your app</h1>
+    <p class="lede" style="margin-bottom:0">Three helpers are working on it, one after another.</p>
+    <ol class="agents" aria-live="polite">
+      <li class="agent" id="agent-recon" data-state="pending">
+        <div class="agent-icon" aria-hidden="true"></div>
+        <div>
+          <div class="agent-name">Recon Agent</div>
+          <div class="agent-desc">Reads through your code looking for common security slip-ups.</div>
+          <div class="agent-status">Waiting</div>
+        </div>
+      </li>
+      <li class="agent" id="agent-translator" data-state="pending">
+        <div class="agent-icon" aria-hidden="true"></div>
+        <div>
+          <div class="agent-name">Translator Agent</div>
+          <div class="agent-desc">Explains each problem in everyday language.</div>
+          <div class="agent-status">Waiting</div>
+        </div>
+      </li>
+      <li class="agent" id="agent-fix" data-state="pending">
+        <div class="agent-icon" aria-hidden="true"></div>
+        <div>
+          <div class="agent-name">Fix Agent</div>
+          <div class="agent-desc">Grades your app and gets ready to write a fix you can paste into your AI builder.</div>
+          <div class="agent-status">Waiting</div>
+        </div>
+      </li>
+    </ol>
+  </main>
+
+  <!-- ===================== 3. REPORT VIEW ===================== -->
+  <main id="view-report" class="view" hidden>
+    <section class="summary" aria-label="Your grade">
+      <div class="grade-block">
+        <div class="grade-letter" id="grade-letter">A</div>
+        <div>
+          <div class="grade-score"><span id="grade-score">0</span> <small>/ 100</small></div>
+          <div class="grade-caption">Security score</div>
+        </div>
+      </div>
+      <div class="counts">
+        <div class="count" id="count-critical"><div class="count-num sev-critical">0</div><div class="count-lbl sev-critical">Critical</div></div>
+        <div class="count" id="count-warning"><div class="count-num sev-warning">0</div><div class="count-lbl sev-warning">Warning</div></div>
+        <div class="count" id="count-minor"><div class="count-num sev-minor">0</div><div class="count-lbl sev-minor">Minor</div></div>
+      </div>
+    </section>
+
+    <div id="translator-notice" class="notice" role="status" hidden>
+      <strong>You're seeing our standard explanations</strong>
+      <p id="translator-notice-body"></p>
+      <div class="actions"><button class="btn" id="retry-translate" type="button">Try the AI explanations again</button></div>
+    </div>
+
+    <div id="findings"></div>
+
+    <p class="foot-note"><span id="scan-meta"></span> Your code never left this browser. Only the short snippets shown above (with keys partly hidden) are sent to Google's Gemini AI to write the explanations and fixes.</p>
+
+    <footer class="report-foot">
+      <p>Sentinel checks for the most common issues in AI-generated apps. It is not a complete security audit, and a passing grade does not guarantee your app is safe.</p>
+      <button class="btn" id="scan-another" type="button">Scan another app</button>
+    </footer>
+  </main>
+</div>
+
+<!-- ===================== 4. FIX MODAL ===================== -->
+<div class="scrim" id="fix-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fix-title">
+    <h2 id="fix-title">Your fix prompt</h2>
+    <p class="sub" id="fix-sub">Copy this and paste it into the chat of the AI tool you used to build your app.</p>
+    <div class="prompt-box" id="fix-prompt" aria-live="polite"></div>
+    <p class="modal-note" id="fix-note" hidden></p>
+    <p class="modal-note" id="copy-note" role="alert" hidden>Your browser blocked copying. Select the text above and copy it yourself (Ctrl+C, or Cmd+C on a Mac).</p>
+    <div class="actions">
+      <button class="btn" id="fix-close" type="button">Close</button>
+      <button class="btn-primary" id="fix-copy" type="button" disabled>Copy Fix Prompt</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Settings modal ===================== -->
+<div class="scrim" id="settings-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <h2 id="settings-title">AI settings</h2>
+    <p class="sub">Sentinel uses Google's Gemini AI to explain problems and write fixes. If whoever set up this page didn't add a key, you can paste your own here. It's only kept until you close this tab.</p>
+    <label for="settings-key" class="lbl">Gemini key</label>
+    <input id="settings-key" class="text" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key from aistudio.google.com/apikey">
+    <p class="modal-note" id="settings-status"></p>
+    <div class="actions">
+      <button class="btn" id="settings-cancel" type="button">Cancel</button>
+      <button class="btn-primary" id="settings-save" type="button">Save for this visit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   STAGE 1: RECON. Deterministic checks, no network.
+   Self-contained so it can run inside a Web Worker (toString'd below).
+   ===================================================================== */
+function reconScan(src) {
+  var MAX_PER_TYPE = 6;
+  var findings = [];
+  var perType = {};
+  var seen = {};
+  var claimed = []; // [start, end) ranges already reported as secrets
+
+  var lineStarts = [0];
+  for (var i = 0; i < src.length; i++) if (src.charCodeAt(i) === 10) lineStarts.push(i + 1);
+  function lineOf(idx) {
+    var lo = 0, hi = lineStarts.length - 1;
+    while (lo < hi) {
+      var mid = (lo + hi + 1) >> 1;
+      if (lineStarts[mid] <= idx) lo = mid; else hi = mid - 1;
+    }
+    return lo + 1;
+  }
+  function clip(s) {
+    s = s.replace(/\s+/g, " ").trim();
+    return s.length > 60 ? s.slice(0, 59) + "…" : s;
+  }
+  function overlaps(a, b) {
+    for (var k = 0; k < claimed.length; k++) if (a < claimed[k][1] && b > claimed[k][0]) return true;
+    return false;
+  }
+  function add(type, severity, idx, text, meta) {
+    var evidence = clip(text);
+    var key = type + "|" + evidence;
+    if (seen[key]) return;
+    seen[key] = 1;
+    perType[type] = (perType[type] || 0) + 1;
+    if (perType[type] > MAX_PER_TYPE) return;
+    findings.push({ type: type, severity: severity, evidence: evidence, line: lineOf(idx), meta: meta || {} });
+  }
+  function each(re, fn) {
+    re.lastIndex = 0;
+    var m;
+    while ((m = re.exec(src)) !== null) {
+      fn(m);
+      if (m[0].length === 0) re.lastIndex++;
+    }
+  }
+  function decodeJwtPayload(tok) {
+    try {
+      var p = tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      while (p.length % 4) p += "=";
+      return JSON.parse(atob(p));
+    } catch (e) { return null; }
+  }
+  function entropy(s) {
+    var f = {}, n = s.length, h = 0;
+    for (var k = 0; k < n; k++) f[s[k]] = (f[s[k]] || 0) + 1;
+    for (var c in f) { var p = f[c] / n; h -= p * Math.log2(p); }
+    return h;
+  }
+
+  // ---- Hardcoded secrets: known formats ----
+  var secretRules = [
+    { re: /\bsk-ant-[A-Za-z0-9_\-]{20,}/g, type: "secret_ai_key", sev: "critical" },
+    { re: /\bsk-(?:proj-)?[A-Za-z0-9_\-]{20,}/g, type: "secret_ai_key", sev: "critical" },
+    { re: /\b(?:sk|rk)_live_[A-Za-z0-9]{10,}/g, type: "secret_payment_key", sev: "critical" },
+    { re: /\b(?:sk|rk)_test_[A-Za-z0-9]{10,}/g, type: "secret_payment_key", sev: "warning" },
+    { re: /\bpk_(?:live|test)_[A-Za-z0-9]{10,}/g, type: "publishable_key", sev: "minor" },
+    { re: /\bAKIA[0-9A-Z]{16}\b/g, type: "cloud_key", sev: "critical" },
+    { re: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g, type: "code_host_token", sev: "critical" },
+    { re: /\bAIza[0-9A-Za-z_\-]{35}/g, type: "google_key", sev: "warning" },
+    { re: /\bsb_secret_[A-Za-z0-9_\-]{10,}/g, type: "service_role_key", sev: "critical" },
+    { re: /\bsb_publishable_[A-Za-z0-9_\-]{10,}/g, type: "anon_key", sev: "warning" }
+  ];
+  secretRules.forEach(function (r) {
+    each(r.re, function (m) {
+      if (overlaps(m.index, m.index + m[0].length)) return;
+      claimed.push([m.index, m.index + m[0].length]);
+      add(r.type, r.sev, m.index, m[0], { secret: true });
+    });
+  });
+
+  // JWTs: decode to tell a Supabase master key from a public one
+  each(/eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{8,}/g, function (m) {
+    if (overlaps(m.index, m.index + m[0].length)) return;
+    claimed.push([m.index, m.index + m[0].length]);
+    var payload = decodeJwtPayload(m[0]) || {};
+    if (payload.role === "service_role") add("service_role_key", "critical", m.index, m[0], { secret: true });
+    else if (payload.role === "anon" || payload.iss === "supabase") add("anon_key", "warning", m.index, m[0], { secret: true });
+    else add("login_token", "warning", m.index, m[0], { secret: true });
+  });
+
+  // High-entropy quoted values that look like secrets (precision first)
+  each(/(["'`])([A-Za-z0-9_\-+\/=]{21,200})\1/g, function (m) {
+    var v = m[2];
+    var start = m.index + 1, end = start + v.length;
+    if (overlaps(start, end)) return;
+    if (/^[a-z0-9_\-.\/]+$/.test(v)) return;                 // lowercase paths, class names, slugs
+    if (/^(sha\d{3}-|data:|https?)/i.test(v)) return;           // integrity hashes, data URIs, URLs
+    if ((v.match(/\//g) || []).length > 1) return;              // file paths
+    var classes = (/[a-z]/.test(v) ? 1 : 0) + (/[A-Z]/.test(v) ? 1 : 0) + (/[0-9]/.test(v) ? 1 : 0);
+    if (classes < 3) return;
+    var h = entropy(v);
+    var before = src.slice(Math.max(0, m.index - 48), m.index);
+    var named = /(key|secret|token|passw|pwd|auth|credential|private|bearer)\w*["'`]?\s*[:=]\s*$/i.test(before);
+    if (named && h >= 3.8 && v.length >= 21) {
+      claimed.push([start, end]);
+      var name = /[\w$\-"'`]+\s*[:=]\s*$/.exec(before);
+      add("possible_secret", "warning", m.index, (name ? name[0] : "") + m[0], { secret: true });
+    } else if (h >= 4.5 && v.length >= 32) {
+      claimed.push([start, end]);
+      add("possible_secret", "minor", m.index, m[0], { secret: true });
+    }
+  });
+
+  // ---- Database config objects in client code ----
+  var supa = /https:\/\/[a-z0-9\-]{6,}\.supabase\.co/i.exec(src) || /createClient\s*\(\s*[A-Za-z_$][\w$]*\s*,/.exec(src);
+  if (supa && /supabase/i.test(src)) add("backend_config", "minor", supa.index, supa[0], { backend: "Supabase" });
+  var fb = /firebaseConfig\s*=\s*\{|initializeApp\s*\(\s*\{[^}]*apiKey|authDomain\s*:\s*["'][^"']+firebaseapp\.com/.exec(src);
+  if (fb) add("backend_config", "minor", fb.index, fb[0], { backend: "Firebase" });
+
+  // ---- Open database rules ----
+  each(/allow\s+(read|write)(\s*,\s*(read|write))?\s*:\s*if\s+true/gi, function (m) {
+    add("open_db_rules", /write/i.test(m[0]) ? "critical" : "warning", m.index, m[0]);
+  });
+  each(/allow\s+read\s*,\s*write\s*;/gi, function (m) { add("open_db_rules", "critical", m.index, m[0]); });
+  each(/["']\.(read|write)["']\s*:\s*(true|["']true["'])/gi, function (m) {
+    add("open_db_rules", m[1].toLowerCase() === "write" ? "critical" : "warning", m.index, m[0]);
+  });
+  each(/disable\s+row\s+level\s+security|row[\s\-]level[\s\-]security\s+(is\s+)?(disabled|off|turned\s+off)|\bRLS\b[^\n]{0,30}?\b(disabled|off|turned\s+off)\b|\brls\s*[:=]\s*false/gi, function (m) {
+    add("open_db_rules", "critical", m.index, m[0]);
+  });
+  each(/using\s*\(\s*true\s*\)|grant\s+all\s+on\s+[^;\n]{1,80}\s+to\s+(anon|public)\b|\bpublic\s+role\b/gi, function (m) {
+    add("open_db_rules", "warning", m.index, m[0]);
+  });
+
+  // ---- Data requests with no Authorization header ----
+  function readCall(openIdx) {
+    var depth = 0, q = null, end = Math.min(src.length, openIdx + 800);
+    for (var k = openIdx; k < end; k++) {
+      var c = src[k];
+      if (q) { if (c === "\\") k++; else if (c === q) q = null; continue; }
+      if (c === '"' || c === "'" || c === "`") q = c;
+      else if (c === "(" || c === "{" || c === "[") depth++;
+      else if (c === ")" || c === "}" || c === "]") { depth--; if (depth === 0) return src.slice(openIdx + 1, k); }
+    }
+    return null;
+  }
+  function splitArgs(s) {
+    var out = [], depth = 0, q = null, last = 0;
+    for (var k = 0; k < s.length; k++) {
+      var c = s[k];
+      if (q) { if (c === "\\") k++; else if (c === q) q = null; continue; }
+      if (c === '"' || c === "'" || c === "`") q = c;
+      else if (c === "(" || c === "{" || c === "[") depth++;
+      else if (c === ")" || c === "}" || c === "]") depth--;
+      else if (c === "," && depth === 0) { out.push(s.slice(last, k)); last = k + 1; }
+    }
+    out.push(s.slice(last));
+    return out.map(function (a) { return a.trim(); });
+  }
+  var dataUrl = /(\/api\/|\/rest\/v\d|\/graphql|\.supabase\.co|firebaseio\.com|\/rpc\/|\/functions\/v\d|\/v\d+\/|\.json\b)/i;
+  var axiosHasAuth = /axios\.defaults\.headers[^;\n]*authorization|axios\.create\s*\(\s*\{[\s\S]{0,300}authorization|interceptors\.request\.use/i.test(src);
+  function checkCall(m, isAxios) {
+    var open = m.index + m[0].length - 1;
+    var inner = readCall(open);
+    if (inner === null) return;
+    var args = splitArgs(inner);
+    var target = args[0] || "";
+    var opts = args[1];
+    if (target[0] === "{" || !/[`"']/.test(target)) return;           // config object or bare variable: can't tell where it goes
+    if (!dataUrl.test(target)) return;
+    if (isAxios) {
+      if (axiosHasAuth) return;
+      opts = /\.(post|put|patch)\s*\($/.test(m[0]) ? args[2] : args[1];  // post/put/patch take (url, data, config)
+    }
+    if (opts !== undefined && opts !== "" && opts[0] !== "{") return;   // options built elsewhere
+    if (opts && /headers\s*:\s*[A-Za-z_$]/.test(opts)) return;         // headers built elsewhere
+    if (opts && /authorization/i.test(opts)) return;
+    add("unauthed_request", "warning", m.index, m[0].replace(/\s+$/, "") + target + (opts ? ", " + opts : "") + ")");
+  }
+  each(/\bfetch\s*\(/g, function (m) { checkCall(m, false); });
+  each(/\baxios(?:\.(?:get|post|put|patch|delete))?\s*\(/g, function (m) { checkCall(m, true); });
+
+  // ---- Admin / debug routes ----
+  each(/(["'`])([^"'`\s]{0,120}?\/(admin|debug|\.env|test)(?=[\/?#"'`]|$)[^"'`\s]{0,60})\1/gi, function (m) {
+    var seg = m[3].toLowerCase();
+    var sev = seg === "test" ? "minor" : "warning";
+    if (/node_modules|\.(test|spec)\.[jt]sx?/i.test(m[2])) return;
+    add("exposed_route", sev, m.index, m[0], { path: m[2] });
+  });
+
+  // ---- http:// resource loads (mixed content) ----
+  var localHost = /^http:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|www\.w3\.org|schemas\.|purl\.org|ns\.adobe\.com)/i;
+  each(/<script\b[^>]*\bsrc\s*=\s*["']?(http:\/\/[^"'\s>]+)/gi, function (m) {
+    if (!localHost.test(m[1])) add("insecure_load", "warning", m.index, m[0], { url: m[1], script: true });
+  });
+  each(/<(img|iframe|link|audio|video|source|embed|form)\b[^>]*\b(src|href|action)\s*=\s*["']?(http:\/\/[^"'\s>]+)/gi, function (m) {
+    if (!localHost.test(m[3])) add("insecure_load", "minor", m.index, m[0], { url: m[3] });
+  });
+  each(/url\(\s*["']?(http:\/\/[^)"'\s]+)/gi, function (m) {
+    if (!localHost.test(m[1])) add("insecure_load", "minor", m.index, m[0], { url: m[1] });
+  });
+  each(/\b(fetch|axios(?:\.\w+)?)\s*\(\s*["'`](http:\/\/[^"'`\s]+)/g, function (m) {
+    if (!localHost.test(m[2])) add("insecure_load", "minor", m.index, m[0], { url: m[2] });
+  });
+
+  var order = { critical: 0, warning: 1, minor: 2 };
+  findings.sort(function (a, b) { return order[a.severity] - order[b.severity] || a.line - b.line; });
+  findings.forEach(function (f, n) { f.id = "f" + (n + 1); });
+  return findings;
+}
+
+/* =====================================================================
+   App
+   ===================================================================== */
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var CONFIG = window.SENTINEL_CONFIG || {};
+  var MODELS = (CONFIG.geminiModels && CONFIG.geminiModels.length) ? CONFIG.geminiModels : ["gemini-3-pro", "gemini-3-pro-preview", "gemini-2.5-pro"];
+  var sessionKey = "";
+  var workingModel = null;
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var SEVERITY = {
+    critical: { label: "Critical", weight: 25 },
+    warning: { label: "Warning", weight: 10 },
+    minor: { label: "Minor", weight: 3 }
+  };
+  var BANNED = /\b(cors|rls|authentication|endpoints?|vulnerabilit(?:y|ies))\b/i;
+
+  var state = { mode: "paste", findings: [], translations: {}, fixes: {}, translatorFailed: false, animatedScore: false };
+
+  /* ---------- Built-in plain-English copy (used when the AI is unavailable) ---------- */
+  var STANDARD = {
+    secret_ai_key: {
+      what: "Your AI service key is visible to anyone who opens your app, which means they can use it on your account and run up your bill.",
+      attacker: "Copy the key and run thousands of AI requests that you pay for.",
+      fix: function (f) { return "My front-end code contains a hardcoded AI API key starting with \"" + prefix(f) + "\". Remove it from all client-side code, store it as a server-side secret, and make AI calls only through a backend function. Then tell me how to cancel the old key."; }
+    },
+    secret_payment_key: {
+      what: "Your secret payment key is visible to anyone who opens your app, so a stranger could see your customers and issue refunds or charges from your payment account.",
+      attacker: "Use your payment account to refund, charge, or view customer details.",
+      fix: function (f) { return "My client-side code contains a Stripe secret key starting with \"" + prefix(f) + "\". Remove it from the front end, store it as a server-side secret, and move every Stripe call that needs it into a backend function. Then tell me how to replace the old key."; }
+    },
+    publishable_key: {
+      what: "Your payment page key is in your app. This one is designed to be public, so it's low risk, but check that it's the one you meant to use.",
+      fix: function (f) { return "Confirm the Stripe publishable key starting with \"" + prefix(f) + "\" in my front-end code is the correct live key, and make sure no Stripe secret key appears anywhere in client-side code."; }
+    },
+    cloud_key: {
+      what: "Your Amazon cloud key is visible in your app, so anyone who finds it could use your cloud account and run up charges in your name.",
+      attacker: "Take over your Amazon cloud account and run expensive services billed to you.",
+      fix: function (f) { return "My front-end code contains an AWS access key starting with \"" + prefix(f) + "\". Remove it from all client-side code, move any AWS calls into a backend function that reads the key from a server-side secret, and tell me how to deactivate the old key."; }
+    },
+    code_host_token: {
+      what: "A GitHub access key is visible in your app, so anyone who finds it could read or change your code.",
+      attacker: "Read, change, or delete your code and anything connected to that GitHub account.",
+      fix: function (f) { return "My front-end code contains a GitHub token starting with \"" + prefix(f) + "\". Remove it from all client-side code, move any GitHub calls to a backend function using a server-side secret, and tell me how to revoke the old token."; }
+    },
+    google_key: {
+      what: "A Google key is visible in your app, so someone could copy it and use Google services that are billed to you unless it's locked to your website.",
+      fix: function (f) { return "My front-end code contains a Google API key starting with \"" + prefix(f) + "\". If it's a Firebase web key, restrict it to my app's domain in Google Cloud. Otherwise, move it into a server-side secret and call Google from a backend function."; }
+    },
+    service_role_key: {
+      what: "Your app contains the master key to your database, so anyone who finds it can read, change, or delete every record, including your users' private data.",
+      attacker: "Download, edit, or wipe your entire database, including every user's details.",
+      fix: function (f) { return "My client-side code contains the Supabase service_role key starting with \"" + prefix(f) + "\". Remove it from the front end immediately, use only the anon key in the browser, move admin operations into Edge Functions, and tell me how to rotate the exposed key."; }
+    },
+    anon_key: {
+      what: "Your database's public key is in your app. That's normal, but it means your database's access rules are the only thing stopping strangers from reading your data.",
+      fix: function () { return "My app uses the Supabase anon key in the browser. Make sure row level security is enabled on every table, with policies so signed-in users can only read and change their own rows. List any table that is currently readable by anyone."; }
+    },
+    login_token: {
+      what: "A saved login pass is written directly into your app's code, so anyone who finds it may be able to act as that account.",
+      attacker: "Use the saved pass to act as that account inside your app.",
+      fix: function (f) { return "My front-end code contains a hardcoded JWT starting with \"" + prefix(f) + "\". Remove it, and get tokens only from the signed-in user's session at runtime instead of storing them in code."; }
+    },
+    possible_secret: {
+      what: "Something that looks like a password or private key is written into your app where anyone who opens it can read it.",
+      attacker: "Copy the value and use it to get into whatever service it unlocks.",
+      fix: function (f) { return "My front-end code has a hardcoded value that looks like a secret: " + redact(f.evidence) + ". If it is a key, password or token, remove it from client-side code, store it as a server-side secret, and use it only from a backend function."; }
+    },
+    backend_config: {
+      what: "Your app talks to its database straight from each visitor's browser, so your database's access rules are the only lock on your data.",
+      fix: function (f) { return "My app connects to " + ((f.meta && f.meta.backend) || "my database") + " directly from the browser. Check that every table or collection has access rules so people can only read and change their own data, and tell me which ones are open to everyone."; }
+    },
+    open_db_rules: {
+      what: "Your database appears to be set so anyone can read and change everything in it, without signing in.",
+      attacker: "Download all your users' data, or change and delete it.",
+      fix: function (f) { return "My code suggests my database is open to everyone (\"" + f.evidence + "\"). Turn on row level security or locked-down security rules for every table, and add policies so only signed-in users can read and change their own data."; }
+    },
+    unauthed_request: {
+      what: "Your app asks for data without proving who is asking, so anyone could send the same request and get the same data back.",
+      fix: function (f) { return "This request in my app sends no Authorization header: " + f.evidence + " Make it send the signed-in user's access token, and make the server reject requests without a valid token."; }
+    },
+    exposed_route: {
+      what: "Your app mentions a behind-the-scenes page, and anyone can find its name by looking at your app and try to open it.",
+      fix: function (f) { return "My app references the route \"" + ((f.meta && f.meta.path) || f.evidence) + "\". Make sure it is only reachable by signed-in admins, checked on the server, not just hidden in the menu. Remove it entirely if it's for testing or debugging."; }
+    },
+    insecure_load: {
+      what: "Part of your app loads over an unprotected connection, so someone on the same Wi-Fi could see or swap out what gets loaded.",
+      fix: function (f) { return "My app loads \"" + ((f.meta && f.meta.url) || f.evidence) + "\" over http://. Change it, and any other http:// links for scripts, images or data, to https://. If the source doesn't support https, find a replacement."; }
+    }
+  };
+  function prefix(f) { return f.evidence.slice(0, 8); }
+  function redact(s) {
+    return s.replace(/([A-Za-z0-9_\-+\/=]{6})[A-Za-z0-9_\-+\/=.]{10,}/g, "$1…[hidden]");
+  }
+
+  /* ---------- Views ---------- */
+  function show(view) {
+    ["input", "scan", "report"].forEach(function (v) { $("view-" + v).hidden = v !== view; });
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- Input view ---------- */
+  var sourceEl = $("source"), urlEl = $("url"), runBtn = $("run-scan");
+  function refreshRunButton() {
+    var ok = state.mode === "paste" ? /\S/.test(sourceEl.value) : /\S/.test(urlEl.value);
+    runBtn.disabled = !ok;
+    var n = sourceEl.value.length;
+    $("source-size").textContent = n === 0 ? "" : n < 1024 ? n + " characters" : Math.round(n / 1024) + " KB pasted";
+  }
+  function setMode(mode) {
+    state.mode = mode;
+    var paste = mode === "paste";
+    $("tab-paste").setAttribute("aria-selected", String(paste));
+    $("tab-url").setAttribute("aria-selected", String(!paste));
+    $("tab-paste").tabIndex = paste ? 0 : -1;
+    $("tab-url").tabIndex = paste ? -1 : 0;
+    $("panel-paste").hidden = !paste;
+    $("panel-url").hidden = paste;
+    hideInputError();
+    refreshRunButton();
+  }
+  $("tab-paste").addEventListener("click", function () { setMode("paste"); });
+  $("tab-url").addEventListener("click", function () { setMode("url"); });
+  document.querySelector(".tabs").addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    var next = state.mode === "paste" ? "url" : "paste";
+    setMode(next);
+    $("tab-" + next).focus();
+  });
+  sourceEl.addEventListener("input", function () { hideInputError(); refreshRunButton(); });
+  urlEl.addEventListener("input", function () { hideInputError(); refreshRunButton(); });
+  urlEl.addEventListener("keydown", function (e) { if (e.key === "Enter" && !runBtn.disabled) runScan(); });
+  $("load-demo").addEventListener("click", function () {
+    setMode("paste");
+    sourceEl.value = DEMO_APP;
+    refreshRunButton();
+    sourceEl.focus();
+    sourceEl.setSelectionRange(0, 0);
+    sourceEl.scrollTop = 0;
+  });
+  runBtn.addEventListener("click", runScan);
+
+  function showInputError(title, body) {
+    $("input-error-title").textContent = title;
+    $("input-error-body").textContent = body;
+    $("input-error").hidden = false;
+  }
+  function hideInputError() { $("input-error").hidden = true; }
+
+  /* ---------- URL fetch through public relays ---------- */
+  var PROXIES = ((CONFIG.corsProxies && CONFIG.corsProxies.length) ? CONFIG.corsProxies : [
+    "https://api.allorigins.win/raw?url={url}",
+    "https://api.codetabs.com/v1/proxy/?quest={url}",
+    "https://cors.eu.org/{raw}"
+  ]).map(function (tpl) {
+    return function (u) { return tpl.replace("{url}", encodeURIComponent(u)).replace("{raw}", u); };
+  });
+  function normaliseUrl(raw) {
+    var s = raw.trim();
+    if (!/^https?:\/\//i.test(s)) s = "https://" + s;
+    try { var u = new URL(s); return /^https?:$/.test(u.protocol) && u.hostname.indexOf(".") > 0 ? u.href : null; }
+    catch (e) { return null; }
+  }
+  function fetchText(url, ms) {
+    var ctrl = new AbortController();
+    var t = setTimeout(function () { ctrl.abort(); }, ms);
+    return fetch(url, { signal: ctrl.signal }).then(function (r) {
+      clearTimeout(t);
+      if (!r.ok) throw new Error("status " + r.status);
+      return r.text();
+    }, function (e) { clearTimeout(t); throw e; });
+  }
+  function viaProxies(url, ms) {
+    var i = 0;
+    function attempt() {
+      if (i >= PROXIES.length) return Promise.reject(new Error("unreachable"));
+      return fetchText(PROXIES[i++](url), ms).catch(attempt);
+    }
+    return attempt();
+  }
+  function fetchAppSource(pageUrl) {
+    return viaProxies(pageUrl, 15000).then(function (html) {
+      if (!html || html.length < 20) throw new Error("empty");
+      // Also pull in the app's own script files, since that's where AI builders put the code.
+      var base = new URL(pageUrl);
+      var scripts = [];
+      html.replace(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi, function (_, src) {
+        try {
+          var abs = new URL(src, base);
+          if (abs.host === base.host && scripts.indexOf(abs.href) < 0) scripts.push(abs.href);
+        } catch (e) {}
+        return _;
+      });
+      scripts = scripts.slice(0, 6);
+      return Promise.all(scripts.map(function (s) {
+        return viaProxies(s, 20000).then(function (js) { return "\n\n/* ---- " + s + " ---- */\n" + js; }, function () { return ""; });
+      })).then(function (parts) { return html + parts.join(""); });
+    });
+  }
+
+  /* ---------- Recon runner (Web Worker so big pastes don't freeze the page) ---------- */
+  function runRecon(src) {
+    return new Promise(function (resolve, reject) {
+      var worker;
+      try {
+        var code = reconScan.toString() + "\nself.onmessage=function(e){try{self.postMessage({ok:true,findings:reconScan(e.data)})}catch(err){self.postMessage({ok:false,message:String(err)})}};";
+        var url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+        worker = new Worker(url);
+        URL.revokeObjectURL(url);
+      } catch (e) { worker = null; }
+      if (!worker) {
+        setTimeout(function () {
+          try { resolve(reconScan(src)); } catch (e) { reject(e); }
+        }, 30);
+        return;
+      }
+      worker.onmessage = function (e) {
+        worker.terminate();
+        if (e.data.ok) resolve(e.data.findings); else reject(new Error(e.data.message));
+      };
+      worker.onerror = function (e) {
+        e.preventDefault();
+        worker.terminate();
+        try { resolve(reconScan(src)); } catch (err) { reject(err); }
+      };
+      worker.postMessage(src);
+    });
+  }
+
+  /* ---------- Gemini ---------- */
+  function apiKey() { return (CONFIG.geminiApiKey || "").trim() || sessionKey; }
+  function AiError(kind) { this.kind = kind; }
+  function callGemini(body, ms) {
+    var key = apiKey();
+    if (!key) return Promise.reject(new AiError("nokey"));
+    var models = workingModel ? [workingModel] : MODELS.slice();
+    function attempt() {
+      if (!models.length) return Promise.reject(new AiError("nomodel"));
+      var model = models.shift();
+      var ctrl = new AbortController();
+      var t = setTimeout(function () { ctrl.abort(); }, ms || 60000);
+      return fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify(body),
+        signal: ctrl.signal
+      }).then(function (res) {
+        clearTimeout(t);
+        if (res.status === 404) return attempt();
+        if (res.status === 400) return res.json().catch(function () { return {}; }).then(function (j) {
+          var msg = (j.error && j.error.message) || "";
+          if (/api key/i.test(msg)) throw new AiError("badkey");
+          if (/model|not found|not supported/i.test(msg)) return attempt();
+          throw new AiError("bad");
+        });
+        if (res.status === 401 || res.status === 403) throw new AiError("badkey");
+        if (res.status === 429) throw new AiError("busy");
+        if (!res.ok) throw new AiError("down");
+        return res.json().then(function (data) {
+          var c = data.candidates && data.candidates[0];
+          var text = c && c.content && c.content.parts ? c.content.parts.map(function (p) { return p.text || ""; }).join("") : "";
+          if (!text) throw new AiError("empty");
+          workingModel = model;
+          return text;
+        });
+      }, function (e) {
+        clearTimeout(t);
+        throw new AiError(e && e.name === "AbortError" ? "timeout" : "offline");
+      });
+    }
+    return attempt();
+  }
+  function aiMessage(err) {
+    var kind = err && err.kind;
+    switch (kind) {
+      case "nokey": return "The AI translator isn't connected yet. Open AI settings at the top of the page to add a Gemini key, then try again.";
+      case "badkey": return "The Gemini key was turned down by Google. Check it in AI settings at the top of the page, then try again.";
+      case "busy": return "The AI service is busy right now. Wait a minute, then try again.";
+      case "timeout": return "The AI service took too long to answer. Try again in a moment.";
+      case "offline": return "Couldn't reach the AI service. Check your internet connection, then try again.";
+      case "nomodel": return "Your Gemini key doesn't have access to the AI models Sentinel uses. Try a different key in AI settings.";
+      default: return "The AI service didn't give a usable answer. Try again in a moment.";
+    }
+  }
+  function safeForFinding(f) {
+    return { id: f.id, problem: f.type, severity: f.severity, line: f.line, evidence: f.meta && f.meta.secret ? redact(f.evidence) : f.evidence };
+  }
+
+  function translate(findings) {
+    var prompt = [
+      "You are the Translator Agent in Sentinel, a security checker for people who built an app with AI tools (Lovable, Bolt, Replit, AI Studio) and have never written code.",
+      "For each finding below, write ONE sentence explaining the real-world consequence in plain, everyday language, addressed directly to the app's owner as \"you\".",
+      "Never use these words: CORS, RLS, authentication, endpoint, vulnerability. Avoid all technical jargon.",
+      "Target register: not \"exposed API key in client bundle\" but \"Your API key is visible to anyone who opens your app, which means they can use your account and run up your bill.\"",
+      "For findings with severity \"critical\" ONLY, also write \"attacker\": one short line on what a stranger could actually do. For other severities set \"attacker\" to an empty string.",
+      "Problem codes: secret_ai_key, secret_payment_key, cloud_key, code_host_token, google_key, service_role_key (Supabase master key), anon_key (Supabase public key, fine only if database rules are locked), publishable_key (meant to be public), login_token, possible_secret, backend_config (database used straight from the browser), open_db_rules, unauthed_request (data request with no proof of who is asking), exposed_route (admin/debug/test page referenced), insecure_load (loaded over http://).",
+      "Return JSON only, with one item per finding, keeping each id.",
+      "",
+      "Findings:",
+      JSON.stringify(findings.map(safeForFinding))
+    ].join("\n");
+    return callGemini({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.3,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            items: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: { id: { type: "STRING" }, sentence: { type: "STRING" }, attacker: { type: "STRING" } },
+                required: ["id", "sentence", "attacker"]
+              }
+            }
+          },
+          required: ["items"]
+        }
+      }
+    }, 90000).then(function (text) {
+      var data;
+      try { data = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, "")); } catch (e) { throw new AiError("bad"); }
+      var out = {};
+      (data.items || []).forEach(function (it) {
+        if (!it || typeof it.id !== "string") return;
+        var sentence = String(it.sentence || "").trim();
+        var attacker = String(it.attacker || "").trim();
+        // Keep the AI to the promised plain-English rules; otherwise our standard copy is used for that finding.
+        if (!sentence || BANNED.test(sentence) || sentence.length > 320) return;
+        if (BANNED.test(attacker) || attacker.length > 220) attacker = "";
+        out[it.id] = { sentence: sentence, attacker: attacker };
+      });
+      if (!Object.keys(out).length) throw new AiError("bad");
+      return out;
+    });
+  }
+
+  function generateFix(f) {
+    var t = textFor(f);
+    var prompt = [
+      "You are the Fix Agent in Sentinel. Write a prompt the app owner will paste into their AI app builder (Lovable, Bolt, Replit, or AI Studio) to fix the problem below.",
+      "Rules: a direct instruction to the AI builder, under 60 words, naming the specific problem and where it shows up (quote the short evidence if useful, never a full secret). No greeting, no explanation to the owner, no markdown, no quotes around the whole thing.",
+      "",
+      "Problem code: " + f.type,
+      "Severity: " + f.severity,
+      "Line: " + f.line,
+      "Evidence: " + safeForFinding(f).evidence,
+      "Plain-English summary: " + t.sentence
+    ].join("\n");
+    return callGemini({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.2, responseMimeType: "text/plain" }
+    }, 60000).then(function (text) {
+      var p = text.trim().replace(/^["'`]+|["'`]+$/g, "").replace(/\*\*/g, "").trim();
+      var words = p.split(/\s+/).filter(Boolean).length;
+      if (!p || words > 60) throw new AiError("bad");
+      return p;
+    });
+  }
+
+  /* ---------- Grade (deterministic) ---------- */
+  function computeGrade(findings) {
+    var score = 100;
+    findings.forEach(function (f) { score -= SEVERITY[f.severity].weight; });
+    score = Math.max(0, score);
+    var letter = score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : "F";
+    return { score: score, letter: letter };
+  }
+
+  /* ---------- Scanning view ---------- */
+  var CHECK = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var DASH = '<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10" stroke="#8B929C" stroke-width="2" stroke-linecap="round"/></svg>';
+  function setAgent(name, st, text) {
+    var el = $("agent-" + name);
+    el.dataset.state = st;
+    el.querySelector(".agent-icon").innerHTML = st === "done" ? CHECK : st === "fallback" ? DASH : "";
+    el.querySelector(".agent-status").textContent = text;
+  }
+
+  var scanToken = 0;
+  function runScan() {
+    if (runBtn.disabled) return;
+    var token = ++scanToken;
+    hideInputError();
+    state.findings = []; state.translations = {}; state.fixes = {}; state.translatorFailed = false; state.animatedScore = false;
+    setAgent("recon", "pending", "Waiting");
+    setAgent("translator", "pending", "Waiting");
+    setAgent("fix", "pending", "Waiting");
+
+    var getSource;
+    if (state.mode === "url") {
+      var url = normaliseUrl(urlEl.value);
+      if (!url) {
+        showInputError("That doesn't look like a web address.", "Check it starts like https://my-app.lovable.app, or paste your source code instead.");
+        return;
+      }
+      show("scan");
+      setAgent("recon", "running", "Downloading your app");
+      getSource = fetchAppSource(url).then(function (s) { state.label = new URL(url).host; return s; }, function () {
+        if (token !== scanToken) return null;
+        show("input");
+        showInputError("Couldn't reach that URL from the browser. Paste your source code instead.", "Some sites block outside downloads, and the free relay Sentinel uses is sometimes down. In your AI builder, open the code view, copy your main file, and paste it in the Paste Source tab.");
+        return null;
+      });
+    } else {
+      show("scan");
+      state.label = Math.max(1, Math.round(sourceEl.value.length / 1024)) + " KB of pasted code";
+      getSource = Promise.resolve(sourceEl.value);
+    }
+
+    getSource.then(function (src) {
+      if (src === null || token !== scanToken) return;
+      setAgent("recon", "running", "Reading your code");
+      return runRecon(src).then(function (findings) {
+        if (token !== scanToken) return;
+        state.findings = findings;
+        setAgent("recon", "done", findings.length === 0 ? "Done. Nothing obvious found." : "Done. Found " + findings.length + " thing" + (findings.length === 1 ? "" : "s") + " to look at.");
+        if (!findings.length) {
+          setAgent("translator", "done", "Done. Nothing to explain.");
+          return;
+        }
+        setAgent("translator", "running", "Writing plain-English explanations");
+        return translate(findings).then(function (map) {
+          if (token !== scanToken) return;
+          state.translations = map;
+          setAgent("translator", "done", "Done. Explained " + findings.length + " finding" + (findings.length === 1 ? "" : "s") + ".");
+        }, function (err) {
+          if (token !== scanToken) return;
+          state.translatorFailed = aiMessage(err);
+          setAgent("translator", "fallback", "Couldn't reach the AI, so it used Sentinel's standard explanations.");
+        });
+      }).then(function () {
+        if (token !== scanToken) return;
+        setAgent("fix", "running", "Grading your app");
+        state.grade = computeGrade(state.findings);
+        renderReport();
+        var fixable = state.findings.filter(function (f) { return f.severity !== "minor"; }).length;
+        setAgent("fix", "done", fixable ? "Ready. Click “Get Fix” on any problem for a prompt to paste into your AI builder." : "Ready. Nothing urgent to fix.");
+        // Hold briefly so the finished checklist is readable before the report replaces it.
+        setTimeout(function () {
+          if (token !== scanToken) return;
+          show("report");
+          animateScore();
+        }, 900);
+      });
+    }).catch(function () {
+      if (token !== scanToken) return;
+      show("input");
+      showInputError("Something went wrong while reading your code.", "Try the scan again. If it keeps happening, try pasting a smaller part of your app, such as just the main file.");
+    });
+  }
+
+  /* ---------- Report ---------- */
+  function textFor(f) {
+    var t = state.translations[f.id];
+    var std = STANDARD[f.type] || { what: "Sentinel spotted something in your code that's worth a closer look." };
+    var sentence = (t && t.sentence) || std.what;
+    var attacker = "";
+    if (f.severity === "critical") attacker = (t && t.attacker) || std.attacker || "";
+    return { sentence: sentence, attacker: attacker };
+  }
+
+  function renderReport() {
+    var g = state.grade;
+    var counts = { critical: 0, warning: 0, minor: 0 };
+    state.findings.forEach(function (f) { counts[f.severity]++; });
+    $("grade-letter").textContent = g.letter;
+    $("grade-letter").className = "grade-letter" + (state.findings.length === 0 ? " sev-pass" : "");
+    $("grade-score").textContent = state.animatedScore || reduceMotion ? g.score : 0;
+    ["critical", "warning", "minor"].forEach(function (s) {
+      var el = $("count-" + s);
+      el.querySelector(".count-num").textContent = counts[s];
+      el.classList.toggle("zero", counts[s] === 0);
+    });
+    $("scan-meta").textContent = state.label ? "Scanned " + state.label + "." : "";
+
+    var notice = $("translator-notice");
+    notice.hidden = !state.translatorFailed;
+    if (state.translatorFailed) $("translator-notice-body").textContent = state.translatorFailed;
+
+    var root = $("findings");
+    root.innerHTML = "";
+    if (!state.findings.length) {
+      var clean = document.createElement("div");
+      clean.className = "group";
+      clean.innerHTML = '<div class="card clean"><h3 class="sev-pass"></h3><p class="attacker" style="color:var(--muted)"></p></div>';
+      clean.querySelector("h3").textContent = "No obvious issues found. This is not a full security audit.";
+      clean.querySelector("p").textContent = "Sentinel didn't spot any exposed keys, open database settings, unprotected data requests, hidden admin pages, or unprotected connections in what you gave it.";
+      root.appendChild(clean);
+      return;
+    }
+    ["critical", "warning", "minor"].forEach(function (sev) {
+      var items = state.findings.filter(function (f) { return f.severity === sev; });
+      if (!items.length) return;
+      var group = document.createElement("section");
+      group.className = "group";
+      var h = document.createElement("h2");
+      h.className = "group-title sev-" + sev;
+      h.textContent = SEVERITY[sev].label + " (" + items.length + ")";
+      group.appendChild(h);
+      var list = document.createElement("div");
+      list.className = "cards";
+      items.forEach(function (f) { list.appendChild(renderCard(f)); });
+      group.appendChild(list);
+      root.appendChild(group);
+    });
+  }
+
+  function renderCard(f) {
+    var t = textFor(f);
+    var card = document.createElement("article");
+    card.className = "card " + f.severity;
+    var h3 = document.createElement("h3");
+    h3.textContent = t.sentence;
+    card.appendChild(h3);
+    if (t.attacker) {
+      var p = document.createElement("p");
+      p.className = "attacker";
+      p.innerHTML = "<b>What someone could do:</b> ";
+      p.appendChild(document.createTextNode(t.attacker));
+      card.appendChild(p);
+    }
+    var ev = document.createElement("div");
+    ev.className = "evidence";
+    var lbl = document.createElement("div");
+    lbl.className = "evidence-lbl";
+    lbl.textContent = "What Sentinel found" + (f.line ? ", line " + f.line : "") + ":";
+    var code = document.createElement("code");
+    code.textContent = f.evidence;
+    ev.appendChild(lbl); ev.appendChild(code);
+    card.appendChild(ev);
+    if (f.severity !== "minor") {
+      var actions = document.createElement("div");
+      actions.className = "actions";
+      var btn = document.createElement("button");
+      btn.className = "btn";
+      btn.type = "button";
+      btn.textContent = "Get Fix";
+      btn.addEventListener("click", function () { openFix(f, btn); });
+      actions.appendChild(btn);
+      card.appendChild(actions);
+    }
+    return card;
+  }
+
+  function animateScore() {
+    var el = $("grade-score"), target = state.grade.score;
+    if (state.animatedScore || reduceMotion) { el.textContent = target; state.animatedScore = true; return; }
+    state.animatedScore = true;
+    var start = null;
+    function frame(ts) {
+      if (start === null) start = ts;
+      var p = Math.min(1, (ts - start) / 600);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * eased);
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  $("retry-translate").addEventListener("click", function () {
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = "Asking the AI…";
+    translate(state.findings).then(function (map) {
+      state.translations = map;
+      state.translatorFailed = false;
+      renderReport();
+    }, function (err) {
+      state.translatorFailed = aiMessage(err);
+      renderReport();
+    }).then(function () {
+      btn.disabled = false;
+      btn.textContent = "Try the AI explanations again";
+    });
+  });
+
+  $("scan-another").addEventListener("click", function () {
+    scanToken++;
+    sourceEl.value = "";
+    urlEl.value = "";
+    refreshRunButton();
+    show("input");
+    (state.mode === "paste" ? sourceEl : urlEl).focus();
+  });
+
+  /* ---------- Fix modal ---------- */
+  var lastFocus = null, fixFor = null, copyTimer = null;
+  function openModal(id) {
+    lastFocus = document.activeElement;
+    $(id).hidden = false;
+  }
+  function closeModal(id) {
+    $(id).hidden = true;
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  function openFix(f) {
+    fixFor = f.id;
+    var box = $("fix-prompt"), copy = $("fix-copy"), note = $("fix-note");
+    clearTimeout(copyTimer);
+    copy.textContent = "Copy Fix Prompt";
+    note.hidden = true;
+    $("copy-note").hidden = true;
+    openModal("fix-modal");
+    $("fix-close").focus();
+    if (state.fixes[f.id]) { showFix(state.fixes[f.id]); return; }
+    box.className = "prompt-box waiting";
+    box.textContent = "The Fix Agent is writing your prompt…";
+    copy.disabled = true;
+    generateFix(f).then(function (text) {
+      state.fixes[f.id] = { text: text };
+      if (fixFor === f.id) showFix(state.fixes[f.id]);
+    }, function (err) {
+      var std = STANDARD[f.type];
+      var fallback = { text: std && std.fix ? std.fix(f) : "", note: aiMessage(err) + " In the meantime, here's Sentinel's standard fix prompt for this problem." };
+      if (fixFor === f.id) showFix(fallback);
+    });
+  }
+  function showFix(fix) {
+    var box = $("fix-prompt"), copy = $("fix-copy"), note = $("fix-note");
+    box.className = "prompt-box";
+    box.textContent = fix.text;
+    copy.disabled = !fix.text;
+    note.hidden = !fix.note;
+    note.textContent = fix.note || "";
+    copy.focus();
+  }
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+      ok ? resolve() : reject();
+    });
+  }
+  $("fix-copy").addEventListener("click", function () {
+    var btn = this;
+    copyText($("fix-prompt").textContent).then(function () {
+      btn.textContent = "Copied";
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(function () { btn.textContent = "Copy Fix Prompt"; }, 2000);
+    }, function () { $("copy-note").hidden = false; });
+  });
+  $("fix-close").addEventListener("click", function () { fixFor = null; closeModal("fix-modal"); });
+
+  /* ---------- Settings modal ---------- */
+  $("open-settings").addEventListener("click", function () {
+    $("settings-key").value = sessionKey;
+    $("settings-status").textContent = (CONFIG.geminiApiKey || "").trim()
+      ? "This page already has a key set up. One you add here is only used if that one is removed."
+      : apiKey() ? "A key is saved for this visit." : "No key yet. Without one, Sentinel uses its standard explanations and fixes.";
+    openModal("settings-modal");
+    $("settings-key").focus();
+  });
+  $("settings-save").addEventListener("click", function () {
+    sessionKey = $("settings-key").value.trim();
+    workingModel = null;
+    closeModal("settings-modal");
+  });
+  $("settings-key").addEventListener("keydown", function (e) { if (e.key === "Enter") $("settings-save").click(); });
+  $("settings-cancel").addEventListener("click", function () { closeModal("settings-modal"); });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!$("fix-modal").hidden) { fixFor = null; closeModal("fix-modal"); }
+    else if (!$("settings-modal").hidden) closeModal("settings-modal");
+  });
+  ["fix-modal", "settings-modal"].forEach(function (id) {
+    $(id).addEventListener("click", function (e) {
+      if (e.target === this) { if (id === "fix-modal") fixFor = null; closeModal(id); }
+    });
+  });
+
+  /* ---------- Demo app (deliberately insecure; all keys are fake) ---------- */
+  var DEMO_APP = [
+    '<!DOCTYPE html>',
+    '<html lang="en">',
+    '<head>',
+    '  <meta charset="utf-8">',
+    '  <title>TaskFlow - Team To-Do App</title>',
+    '  <link rel="stylesheet" href="https://cdn.example.com/taskflow.css">',
+    '</head>',
+    '<body>',
+    '  <div id="app"></div>',
+    '  <img src="http://images.example-cdn.com/taskflow-logo.png" alt="TaskFlow">',
+    '',
+    '  <script type="module">',
+    '    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";',
+    '',
+    '    const SUPABASE_URL = "https://taskflowdemo.supabase.co";',
+    '    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhc2tmbG93ZGVtbyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjIwMTU1NzYwMDB9.ZGVtby1zaWduYXR1cmUtbm90LXJlYWwtMDAwMQ";',
+    '    const OPENAI_API_KEY = "sk-proj-Demo0nlyN0tARealKey8x7Qm2Lp9Vt4Wz";',
+    '',
+    '    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);',
+    '',
+    '    // NOTE: RLS disabled on the tasks table for now so the app works. Fix later.',
+    '',
+    '    async function loadTasks() {',
+    '      const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?select=*`, {',
+    '        headers: { apikey: SUPABASE_ANON_KEY }',
+    '      });',
+    '      return res.json();',
+    '    }',
+    '',
+    '    async function suggestTasks(goal) {',
+    '      const res = await fetch("https://api.openai.com/v1/chat/completions", {',
+    '        method: "POST",',
+    '        headers: {',
+    '          "Content-Type": "application/json",',
+    '          Authorization: `Bearer ${OPENAI_API_KEY}`',
+    '        },',
+    '        body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "user", content: goal }] })',
+    '      });',
+    '      return res.json();',
+    '    }',
+    '',
+    '    function route() {',
+    '      if (location.pathname === "/admin") return renderAdminPanel();',
+    '      return renderBoard();',
+    '    }',
+    '',
+    '    function renderAdminPanel() {',
+    '      document.getElementById("app").innerHTML = "<h1>Admin</h1><button id=\'wipe\'>Delete all tasks</button>";',
+    '    }',
+    '',
+    '    async function renderBoard() {',
+    '      const tasks = await loadTasks();',
+    '      document.getElementById("app").innerHTML = tasks.map(t => `<li>${t.title}</li>`).join("");',
+    '    }',
+    '',
+    '    route();',
+    '  <\/script>',
+    '</body>',
+    '</html>'
+  ].join("\n");
+
+  refreshRunButton();
+})();
+</script>
+</body>
+</html>

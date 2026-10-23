@@ -1,0 +1,1 @@
+{"root":["./src/AuthContext.tsx","./src/AuthModal.tsx","./src/GeminiChat.tsx","./src/Hero.tsx","./src/LandingPage.tsx","./src/ProtectedRoute.tsx","./src/ReportBreakdownModal.tsx","./src/UserHeaderMenu.tsx","./src/Workspace.tsx","./src/components.tsx","./src/firebase.ts","./src/main.tsx"],"version":"5.9.3"}

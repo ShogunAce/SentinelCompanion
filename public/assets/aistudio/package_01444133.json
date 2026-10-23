@@ -1,0 +1,12 @@
+{
+  "name": "sentinel-scanner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Passive, rate-limited, SSRF-guarded scan service for Sentinel. Zero runtime dependencies.",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=20.19.0" }
+}

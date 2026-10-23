@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account and profile metadata stored by auth UID",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID matching document ID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User display name", "maxLength": 100 },
+        "photoURL": { "type": "string", "description": "User avatar URL", "maxLength": 500 },
+        "role": { "type": "string", "enum": ["builder"], "description": "User RBAC role - default builder" },
+        "createdAt": { "type": "string", "description": "ISO timestamp when account was created" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "Scan": {
+      "title": "Vulnerability Scan",
+      "description": "Security scan record for a vibecoded application",
+      "type": "object",
+      "properties": {
+        "scanId": { "type": "string", "description": "Cryptographically secure random scan ID" },
+        "ownerId": { "type": "string", "description": "Firebase Auth UID of scan owner" },
+        "appUrl": { "type": "string", "description": "Scanned target application URL", "maxLength": 300 },
+        "status": { "type": "string", "enum": ["queued", "analyzing", "completed", "failed"], "description": "Scan processing status" },
+        "findingsCount": { "type": "number", "description": "Total security issues detected" },
+        "scoreLetter": { "type": "string", "description": "Security grade letter", "maxLength": 2 },
+        "createdAt": { "type": "string", "description": "Scan initiation timestamp" }
+      },
+      "required": ["scanId", "ownerId", "appUrl", "status", "createdAt"]
+    },
+    "ActionItem": {
+      "title": "AI Fix Prompt Action Item",
+      "description": "Recommended prompt fix for a specific security finding",
+      "type": "object",
+      "properties": {
+        "actionId": { "type": "string", "description": "Cryptographically secure random action ID" },
+        "ownerId": { "type": "string", "description": "Firebase Auth UID of action item owner" },
+        "scanId": { "type": "string", "description": "Associated scan ID" },
+        "title": { "type": "string", "description": "Flaw title", "maxLength": 150 },
+        "status": { "type": "string", "enum": ["to_review", "applied"], "description": "Fix review status" },
+        "promptFix": { "type": "string", "description": "Targeted AI builder prompt", "maxLength": 2000 },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["actionId", "ownerId", "title", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Isolated user profile document accessible only by owner UID"
+    },
+    "/users/{userId}/scans/{scanId}": {
+      "schema": { "$ref": "#/entities/Scan" },
+      "description": "User's isolated security scan history protected against IDOR"
+    },
+    "/users/{userId}/actionItems/{actionId}": {
+      "schema": { "$ref": "#/entities/ActionItem" },
+      "description": "User's isolated fix prompts protected against privilege escalation and IDOR"
+    }
+  }
+}

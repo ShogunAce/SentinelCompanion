@@ -1,0 +1,5 @@
+{
+  "name": "Sentinel",
+  "description": "Digital Security Companion for Vibecoded Apps powered by Gemini and Firebase.",
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

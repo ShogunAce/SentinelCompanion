@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'coleslaysolutions@gmail.com' ||
+        request.auth.token.email == 'coleduane96@gmail.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation schemas
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'updatedAt'])
+        && data.uid == request.auth.uid
+        && data.email is string
+        && data.role is string
+        && data.role == 'builder'
+        && data.createdAt is string;
+    }
+
+    function isValidScan(data) {
+      return data.keys().hasAll(['scanId', 'ownerId', 'appUrl', 'status', 'createdAt'])
+        && data.keys().hasOnly(['scanId', 'ownerId', 'appUrl', 'status', 'findingsCount', 'scoreLetter', 'createdAt'])
+        && data.scanId is string
+        && data.scanId.size() <= 128
+        && data.ownerId == request.auth.uid
+        && data.appUrl is string
+        && data.appUrl.size() <= 300
+        && data.status in ['queued', 'analyzing', 'completed', 'failed']
+        && data.createdAt is string;
+    }
+
+    function isValidAction(data) {
+      return data.keys().hasAll(['actionId', 'ownerId', 'title', 'status', 'createdAt'])
+        && data.keys().hasOnly(['actionId', 'ownerId', 'scanId', 'title', 'status', 'promptFix', 'createdAt'])
+        && data.actionId is string
+        && data.actionId.size() <= 128
+        && data.ownerId == request.auth.uid
+        && data.title is string
+        && data.title.size() <= 150
+        && data.status in ['to_review', 'applied']
+        && data.createdAt is string;
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health check test document
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Activity Logs Collection for Admin Monitoring
+    match /activity_logs/{logId} {
+      allow create: if isSignedIn() 
+        && isValidId(logId)
+        && incoming().userId == request.auth.uid;
+      allow get, list: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Users Collection - Strict UID path isolation with Admin Access
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin(); // Anti-enumeration for regular users; Admin can audit user list
+      allow create: if isOwner(userId) 
+        && isValidUser(incoming()) 
+        && incoming().role == 'builder'; // Anti-privilege escalation
+      allow update: if isOwner(userId) 
+        && isValidUser(incoming()) 
+        && incoming().role == existing().role; // Cannot escalate role
+      allow delete: if false;
+
+      // Isolated User Scans
+      match /scans/{scanId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) 
+          && isValidId(scanId) 
+          && incoming().ownerId == request.auth.uid 
+          && isValidScan(incoming());
+        allow update: if isOwner(userId) 
+          && isValidId(scanId) 
+          && incoming().ownerId == existing().ownerId 
+          && isValidScan(incoming());
+        allow delete: if isOwner(userId) && isValidId(scanId);
+      }
+
+      // Isolated Action Items / Fix Prompts
+      match /actionItems/{actionId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) 
+          && isValidId(actionId) 
+          && incoming().ownerId == request.auth.uid 
+          && isValidAction(incoming());
+        allow update: if isOwner(userId) 
+          && isValidId(actionId) 
+          && incoming().ownerId == existing().ownerId 
+          && isValidAction(incoming());
+        allow delete: if isOwner(userId) && isValidId(actionId);
+      }
+    }
+  }
+}
