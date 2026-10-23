@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ActionLink, Brand, Dialog, EmptyState, FilterTabs, Icon, PreviewNote, ReportPreview, ScopeContent, ScopeDialog, UrlForm } from './components';
 import type { IconName, UrlFormProps } from './components';
 import { ProtectedWorkspaceGuard } from './ProtectedRoute';
@@ -10,6 +10,9 @@ import { collection, doc, getDocs, setDoc } from 'firebase/firestore';
 import { ReportBreakdownModal } from './ReportBreakdownModal';
 import type { FindingPayload } from './ReportBreakdownModal';
 import { GeminiChat } from './GeminiChat';
+import { UsagePanel } from './UsagePanel';
+import { useUsage } from './UsageContext';
+import { WaitlistModal } from './WaitlistModal';
 
 const destinations: { path: string; label: string; icon: IconName }[] = [
   { path: '/workspace', label: 'Overview', icon: 'overview' },
@@ -96,6 +99,7 @@ export function WorkspaceLayout() {
       )}
 
       {scope && <ScopeDialog onClose={() => setScope(false)}/>}
+      <WaitlistModal />
     </div>
   );
 }
@@ -124,6 +128,9 @@ export function OverviewPage() {
         description="Audit AI-generated code for cybersecurity vulnerabilities, catch logic flaws early, and generate targeted prompt fixes for your builder."
         action={<ActionLink to="/workspace/companion">Talk to Gemini AI</ActionLink>}
       />
+
+      {/* Plan and Usage Meters Panel */}
+      <UsagePanel />
 
       <div className="overview-grid">
         <section className="surface latest-report">
@@ -187,6 +194,8 @@ export function OverviewPage() {
 
 export function NewScanPage(props: UrlFormProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { canScan, recordScan, resetDate, currentPlan, openWaitlistModal } = useUsage();
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanReport, setScanReport] = useState<any | null>(null);
@@ -195,6 +204,12 @@ export function NewScanPage(props: UrlFormProps) {
 
   const handleRunScan = async (targetUrl: string) => {
     if (!targetUrl) return;
+
+    // Check scan limit before running scan
+    if (!canScan()) {
+      return;
+    }
+
     setIsScanning(true);
     setScanError(null);
     setScanReport(null);
@@ -211,6 +226,10 @@ export function NewScanPage(props: UrlFormProps) {
       }
       setScanReport(data);
 
+      // Record scan usage in UsageContext
+      // If result has cached === true, recordScan will NOT count it
+      recordScan(data.target?.origin || targetUrl, data.cached);
+
       if (user) {
         const scanId = `scan_${Date.now()}`;
         try {
@@ -226,7 +245,8 @@ export function NewScanPage(props: UrlFormProps) {
           await logUserActivity('scan_executed', {
             appUrl: targetUrl.slice(0, 150),
             grade: data.grade,
-            findingsCount: data.findings?.length || 0
+            findingsCount: data.findings?.length || 0,
+            cached: !!data.cached
           });
         } catch (e) {
           console.warn('Could not record scan history:', e);
@@ -255,12 +275,31 @@ export function NewScanPage(props: UrlFormProps) {
 
       <div className="scan-layout">
         <div>
-          <UrlForm
-            {...props}
-            workspace
-            isScanning={isScanning}
-            onSubmitScan={handleRunScan}
-          />
+          {!canScan() ? (
+            <div className="surface" style={{ padding: '28px', borderLeft: '4px solid #d97706', background: '#fffbeb', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>
+                Scan limit reached for this month
+              </h3>
+              <p style={{ fontSize: '13px', color: '#78350f', lineHeight: 1.6, marginBottom: '20px' }}>
+                You have used your {currentPlan.scansPerMonth} fresh scans this month. They reset on <strong>{resetDate}</strong>. Your last report is still here.
+              </p>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button className="button secondary small" onClick={() => navigate('/workspace/reports')}>
+                  View last report
+                </button>
+                <button className="button small" onClick={() => openWaitlistModal('pro', 'monthly')}>
+                  See Pro
+                </button>
+              </div>
+            </div>
+          ) : (
+            <UrlForm
+              {...props}
+              workspace
+              isScanning={isScanning}
+              onSubmitScan={handleRunScan}
+            />
+          )}
 
           {isScanning && (
             <div className="surface" style={{ marginTop: '20px', padding: '24px', textAlign: 'center' }}>

@@ -4,24 +4,287 @@ import { ActionLink, Brand, Dialog, Icon, PreviewNote, ReportPreview, ScopeConte
 import type { UrlFormProps } from './components';
 import { UserHeaderMenu } from './UserHeaderMenu';
 import Hero from './Hero';
+import { PricingSection } from './PricingSection';
+import { WaitlistModal } from './WaitlistModal';
 
-const publicLinks = [{ href: '#how-it-works', label: 'How it works' }, { href: '#coverage', label: 'What Sentinel can check' }, { href: '#faq', label: 'FAQ' }];
-function LandingHeader() { const [open, setOpen] = useState(false); return <header className="public-header container"><Brand/><nav className="desktop-nav" aria-label="Website">{publicLinks.map(l => <a key={l.href} href={l.href}>{l.label}</a>)}</nav><div className="header-actions"><UserHeaderMenu /><Link className="header-workspace-link" to="/workspace">Open workspace<Icon name="arrow"/></Link><button className="icon-button mobile-toggle" aria-label="Open navigation" aria-expanded={open} onClick={() => setOpen(true)}><Icon name="menu"/></button></div>{open && <Dialog title="Explore Sentinel" onClose={() => setOpen(false)}><nav className="mobile-nav" aria-label="Mobile website">{publicLinks.map(l => <a key={l.href} href={l.href} onClick={() => setOpen(false)}>{l.label}<Icon name="arrow"/></a>)}<Link to="/workspace" onClick={() => setOpen(false)}>Open workspace<Icon name="arrow"/></Link></nav></Dialog>}</header>; }
-const faqs = [
- ['Why do vibecoded apps need Sentinel?', 'Vibe coding tools generate functional code rapidly, but AI models frequently overlook security hardening—such as missing authentication checks, unvalidated inputs, open database permissions, and exposed API keys. Sentinel acts as your digital companion to audit your vibecoded app and provide instant fixes.'],
- ['Does this version scan my app?', 'No. This is a frontend preview. You can explore the workspace and report layout, but automated scanning agents are not live in this demo.'],
- ['Is my URL sent anywhere?', 'No. The address you type stays in temporary memory. It is not transmitted or stored anywhere. Refreshing clears it.'],
- ['What cybersecurity & coding flaws does Sentinel look for?', 'Sentinel checks for exposed API keys, broken client-side access rules, missing security headers, unsafe CORS policies, input sanitization gaps, and prompt injection vulnerabilities in AI workflows.'],
- ['How do I fix a security flaw found by Sentinel?', 'Sentinel translates every finding into plain-English context and generates copy-paste builder prompts. You simply paste the prompt into your AI builder (Cursor, Lovable, Bolt, v0, AI Studio) to apply the fix automatically.'],
+const publicLinks = [
+  { href: '#how-it-works', label: 'How it works' },
+  { href: '#pricing', label: 'Pricing' },
+  { href: '#coverage', label: 'Coverage' },
+  { href: '#faq', label: 'FAQ' },
 ];
-export default function LandingPage(props: UrlFormProps) { return <><LandingHeader/><main id="main-content"><Hero {...props}/>
-<section className="section container why"><p className="section-kicker">Built for the vibe coding era</p><div className="editorial-split"><h2>Vibe coding is fast.<br/>Security flaws are <em>sneaky.</em></h2><div><p className="large-copy">When you build apps by chatting with AI, functional UI appears in seconds—along with hidden cybersecurity blind spots.</p><p>AI tools write functional code, but they don’t automatically lock down your routes, protect your API keys, or enforce database rules. Sentinel is your digital companion that catches coding flaws early and tells you exactly how to fix them.</p><a className="text-link" href="#how-it-works">Meet your digital companion<Icon name="arrow"/></a></div></div></section>
-<section className="translation-section"><div className="container section"><div className="section-intro"><p className="section-kicker">No cybersecurity degree required</p><h2>Flaws explained.<br/>Fixes <em>ready to prompt.</em></h2><p>Sentinel translates complex security vulnerabilities into clear explanations and instant fixes for your AI builder.</p></div><div className="translation-rows">{[['What is the vulnerability?', 'The cybersecurity flaw explained.', 'Understand what went wrong in your vibecoded app without wading through jargon.'], ['Why is it a security risk?', 'The real-world impact.', 'See how an attacker could exploit the flaw to compromise user data or app logic.'], ['How do I fix it?', 'A ready-to-use AI prompt.', 'Copy Sentinel’s targeted fix prompt directly into your AI builder to resolve the flaw immediately.']].map(([q, h, p], i) => <div className="translation-row" key={q}><span className="row-number">0{i + 1}</span><div><h3>{q}</h3><p><strong>{h}</strong> {p}</p></div><Icon name="arrow"/></div>)}</div></div></section>
-<section className="container section report-section"><div className="section-topline"><div><p className="section-kicker">Clarity you can act on</p><h2>A security report built for <em>AI builders.</em></h2></div><p>The vulnerability analysis, real-world context, and exact prompt fix.<br/>All delivered by your digital security companion.</p></div><ReportPreview compact/><div className="report-section-bottom"><PreviewNote>Unpopulated interface preview · No scan results</PreviewNote><ActionLink to="/workspace/reports" secondary>Explore the workspace</ActionLink></div></section>
-<section id="how-it-works" className="container section workflow"><p className="section-kicker">Your digital companion in action</p><h2>From vibecoded app<br/>to <em>hardened software.</em></h2><div className="workflow-steps">{[['Recon', 'The Observer', 'Audit public surfaces, client assets, and response headers for coding flaws.', 'scope'], ['Translator', 'The Risk Explainer', 'Translate security vulnerabilities into clear, plain-English impact statements.', 'report'], ['Fix Doctor', 'The Prompt Fixer', 'Generate tailored fix prompts to paste straight back into your AI editor.', 'plan']].map(([name, role, copy, icon], i) => <article key={name}><div className="step-line"><span className="step-icon"><Icon name={icon as 'scope' | 'report' | 'plan'}/></span><span>0{i + 1}</span></div><p className="step-role">{role}</p><h3>{name}</h3><p>{copy}</p></article>)}</div><PreviewNote>Workflow preview. Agents are not connected in this version.</PreviewNote></section>
-<section id="coverage" className="coverage-section"><div className="container section"><p className="section-kicker">Honest about the whole picture</p><h2>What Sentinel can—and <em>can’t</em>—see.</h2><ScopeContent/></div></section>
-<section className="container section builders"><p className="section-kicker">Seamless integration with your AI stack</p><h2>Fix security flaws in the<br/>vibe coding tools <em>you love.</em></h2><p>Sentinel gives you the exact prompt to paste back into your AI builder.<br/>Keep your workflow fast while keeping your app secure.</p><div className="builder-names"><span>Google AI Studio</span><span>Cursor</span><span>Lovable</span><span>Bolt.new</span><span>Replit</span><span>v0</span></div><p className="subtle">Sentinel provides prompt fixes compatible with any AI code generator. Not affiliated with these tools.</p></section>
-<section id="faq" className="container section faq-section"><div><p className="section-kicker">Everything you need to know</p><h2>Questions,<br/>answered <em>plainly.</em></h2></div><div className="faq-list">{faqs.map(([q, a]) => <details key={q}><summary>{q}<span className="disclosure-mark">+</span></summary><p>{a}</p></details>)}</div></section>
-<section className="closing container"><div><p className="section-kicker">Your digital companion is ready</p><h2>Vibe code with<br/><em>security confidence.</em></h2><ActionLink to="/workspace">Open workspace</ActionLink></div><div className="coming-later"><Icon name="shield"/><h3>Live companion scanning is coming soon.</h3><p>Get to know the workspace now.<br/>Catch cybersecurity & coding flaws before your users do.</p><span className="subtle">Frontend preview · No signup needed</span></div></section></main><footer className="container footer"><div><Brand/><p>Digital security companion for vibecoded apps.</p></div><nav aria-label="Footer"><a href="#how-it-works">How it works</a><a href="#coverage">Coverage</a><a href="#faq">FAQ</a><Link to="/workspace">Workspace</Link></nav><span className="subtle">Frontend preview · No live scanning</span></footer></>; }
 
+function LandingHeader() {
+  const [open, setOpen] = useState(false);
+  return (
+    <header className="public-header container">
+      <Brand />
+      <nav className="desktop-nav" aria-label="Website">
+        {publicLinks.map((l) => (
+          <a key={l.href} href={l.href}>
+            {l.label}
+          </a>
+        ))}
+        <Link to="/contact">Contact Us</Link>
+      </nav>
+      <div className="header-actions">
+        <UserHeaderMenu />
+        <Link className="header-workspace-link" to="/workspace">
+          Open workspace
+          <Icon name="arrow" />
+        </Link>
+        <button
+          className="icon-button mobile-toggle"
+          aria-label="Open navigation"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+        >
+          <Icon name="menu" />
+        </button>
+      </div>
+      {open && (
+        <Dialog title="Explore Sentinel" onClose={() => setOpen(false)}>
+          <nav className="mobile-nav" aria-label="Mobile website">
+            {publicLinks.map((l) => (
+              <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
+                {l.label}
+                <Icon name="arrow" />
+              </a>
+            ))}
+            <Link to="/contact" onClick={() => setOpen(false)}>
+              Contact Us
+              <Icon name="arrow" />
+            </Link>
+            <Link to="/workspace" onClick={() => setOpen(false)}>
+              Open workspace
+              <Icon name="arrow" />
+            </Link>
+          </nav>
+        </Dialog>
+      )}
+    </header>
+  );
+}
 
+const faqs = [
+  [
+    'Why do vibecoded apps need Sentinel?',
+    'Vibe coding tools generate functional code rapidly, but AI models frequently overlook security hardening: missing authentication checks, unvalidated inputs, open database permissions, and exposed API keys. Sentinel acts as your digital companion to audit your vibecoded app and provide instant fixes.',
+  ],
+  [
+    'What happens when I run out of scans?',
+    'When you reach your 3 fresh scans for the month on the Free plan, your previous report and companion chats remain completely accessible. You can review existing findings and fix prompts at any time. Fresh scan limits reset automatically on the 1st of next month.',
+  ],
+  [
+    'Why is there a limit on companion messages?',
+    'Each message sent to the companion triggers a real-time Gemini AI API call that costs real computing resources. The Free plan includes a 15 message monthly allowance so every builder gets AI guidance without unexpected fees.',
+  ],
+  [
+    'Is Lifetime really lifetime?',
+    'Lifetime means the life of the Sentinel product, backed by a strict 100 seat cap and fair-use limits. Need more companion capacity? Bring your own Gemini key support is coming soon.',
+  ],
+  [
+    'What cybersecurity & coding flaws does Sentinel look for?',
+    'Sentinel checks for exposed API keys, broken client-side access rules, missing security headers, unsafe CORS policies, input sanitization gaps, and prompt injection vulnerabilities in AI workflows.',
+  ],
+  [
+    'How do I fix a security flaw found by Sentinel?',
+    'Sentinel translates every finding into plain-English context and generates copy-paste builder prompts. You simply paste the prompt into your AI builder (Cursor, Lovable, Bolt, v0, AI Studio) to apply the fix automatically.',
+  ],
+];
+
+export default function LandingPage(props: UrlFormProps) {
+  return (
+    <>
+      <LandingHeader />
+      <main id="main-content">
+        <Hero {...props} />
+
+        <section className="section container why">
+          <p className="section-kicker">Built for the vibe coding era</p>
+          <div className="editorial-split">
+            <h2>
+              Vibe coding is fast.<br />Security flaws are <em>sneaky.</em>
+            </h2>
+            <div>
+              <p className="large-copy">
+                When you build apps by chatting with AI, functional UI appears in seconds, along with hidden cybersecurity blind spots.
+              </p>
+              <p>
+                AI tools write functional code, but they do not automatically lock down your routes, protect your API keys, or enforce database rules. Sentinel is your digital companion that catches coding flaws early and tells you exactly how to fix them.
+              </p>
+              <a className="text-link" href="#how-it-works">
+                Meet your digital companion
+                <Icon name="arrow" />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="translation-section">
+          <div className="container section">
+            <div className="section-intro">
+              <p className="section-kicker">No cybersecurity degree required</p>
+              <h2>
+                Flaws explained.<br />Fixes <em>ready to prompt.</em>
+              </h2>
+              <p>Sentinel translates complex security vulnerabilities into clear explanations and instant fixes for your AI builder.</p>
+            </div>
+            <div className="translation-rows">
+              {[
+                ['What is the vulnerability?', 'The cybersecurity flaw explained.', 'Understand what went wrong in your vibecoded app without wading through jargon.'],
+                ['Why is it a security risk?', 'The real-world impact.', 'See how an attacker could exploit the flaw to compromise user data or app logic.'],
+                ['How do I fix it?', 'A ready-to-use AI prompt.', 'Copy Sentinel’s targeted fix prompt directly into your AI builder to resolve the flaw immediately.'],
+              ].map(([q, h, p], i) => (
+                <div className="translation-row" key={q}>
+                  <span className="row-number">0{i + 1}</span>
+                  <div>
+                    <h3>{q}</h3>
+                    <p>
+                      <strong>{h}</strong> {p}
+                    </p>
+                  </div>
+                  <Icon name="arrow" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="container section report-section">
+          <div className="section-topline">
+            <div>
+              <p className="section-kicker">Clarity you can act on</p>
+              <h2>
+                A security report built for <em>AI builders.</em>
+              </h2>
+            </div>
+            <p>
+              The vulnerability analysis, real-world context, and exact prompt fix.<br />All delivered by your digital security companion.
+            </p>
+          </div>
+          <ReportPreview compact />
+          <div className="report-section-bottom">
+            <PreviewNote>Interactive interface preview</PreviewNote>
+            <ActionLink to="/workspace/reports" secondary>
+              Explore the workspace
+            </ActionLink>
+          </div>
+        </section>
+
+        <section id="how-it-works" className="container section workflow">
+          <p className="section-kicker">Your digital companion in action</p>
+          <h2>
+            From vibecoded app<br />to <em>hardened software.</em>
+          </h2>
+          <div className="workflow-steps">
+            {[
+              ['Recon', 'The Observer', 'Audit public surfaces, client assets, and response headers for coding flaws.', 'scope'],
+              ['Translator', 'The Risk Explainer', 'Translate security vulnerabilities into clear, plain-English impact statements.', 'report'],
+              ['Fix Doctor', 'The Prompt Fixer', 'Generate tailored fix prompts to paste straight back into your AI editor.', 'plan'],
+            ].map(([name, role, copy, icon], i) => (
+              <article key={name}>
+                <div className="step-line">
+                  <span className="step-icon">
+                    <Icon name={icon as 'scope' | 'report' | 'plan'} />
+                  </span>
+                  <span>0{i + 1}</span>
+                </div>
+                <p className="step-role">{role}</p>
+                <h3>{name}</h3>
+                <p>{copy}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* PRICING SECTION */}
+        <PricingSection />
+
+        <section id="coverage" className="coverage-section">
+          <div className="container section">
+            <p className="section-kicker">Honest about the whole picture</p>
+            <h2>
+              What Sentinel can, and <em>cannot</em>, see.
+            </h2>
+            <ScopeContent />
+          </div>
+        </section>
+
+        <section className="container section builders">
+          <p className="section-kicker">Seamless integration with your AI stack</p>
+          <h2>
+            Fix security flaws in the<br />vibe coding tools <em>you love.</em>
+          </h2>
+          <p>
+            Sentinel gives you the exact prompt to paste back into your AI builder.<br />Keep your workflow fast while keeping your app secure.
+          </p>
+          <div className="builder-names">
+            <span>Google AI Studio</span>
+            <span>Cursor</span>
+            <span>Lovable</span>
+            <span>Bolt.new</span>
+            <span>Replit</span>
+            <span>v0</span>
+          </div>
+          <p className="subtle">Sentinel provides prompt fixes compatible with any AI code generator. Not affiliated with these tools.</p>
+        </section>
+
+        <section id="faq" className="container section faq-section">
+          <div>
+            <p className="section-kicker">Everything you need to know</p>
+            <h2>
+              Questions,<br />answered <em>plainly.</em>
+            </h2>
+          </div>
+          <div className="faq-list">
+            {faqs.map(([q, a]) => (
+              <details key={q}>
+                <summary>
+                  {q}
+                  <span className="disclosure-mark">+</span>
+                </summary>
+                <p>{a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="closing container">
+          <div>
+            <p className="section-kicker">Your digital companion is ready</p>
+            <h2>
+              Vibe code with<br /><em>security confidence.</em>
+            </h2>
+            <ActionLink to="/workspace">Open workspace</ActionLink>
+          </div>
+          <div className="coming-later">
+            <Icon name="shield" />
+            <h3>Live companion scanning is ready.</h3>
+            <p>
+              Get to know the workspace now.<br />Catch cybersecurity & coding flaws before your users do.
+            </p>
+            <span className="subtle">Free plan includes 3 scans / month</span>
+          </div>
+        </section>
+      </main>
+
+      <footer className="container footer">
+        <div>
+          <Brand />
+          <p>Digital security companion for vibecoded apps.</p>
+        </div>
+        <nav aria-label="Footer">
+          <a href="#how-it-works">How it works</a>
+          <Link to="/pricing">Pricing</Link>
+          <Link to="/contact">Contact Us</Link>
+          <a href="#faq">FAQ</a>
+          <Link to="/workspace">Workspace</Link>
+        </nav>
+        <p className="subtle">Sentinel Digital Security Companion</p>
+      </footer>
+
+      <WaitlistModal />
+    </>
+  );
+}

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { logUserActivity } from './firebase';
 import { Icon } from './components';
+import { useUsage } from './UsageContext';
 
 interface ChatMessage {
   id: string;
@@ -19,6 +20,7 @@ interface GeminiChatProps {
 
 export function GeminiChat({ initialPrompt = '', onClose, isEmbedded = false }: GeminiChatProps) {
   const { user } = useAuth();
+  const { canMessage, recordMessage, currentPlan, openWaitlistModal } = useUsage();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome-1',
@@ -49,6 +51,11 @@ export function GeminiChat({ initialPrompt = '', onClose, isEmbedded = false }: 
 
     if (!user) {
       setError('You must be signed in to talk to the Sentinel AI Companion.');
+      return;
+    }
+
+    // Enforce companion message limit
+    if (!canMessage()) {
       return;
     }
 
@@ -98,6 +105,8 @@ export function GeminiChat({ initialPrompt = '', onClose, isEmbedded = false }: 
       };
 
       setMessages((prev) => [...prev, botMsg]);
+      recordMessage(); // Record successful companion usage
+
       await logUserActivity('companion_query', {
         promptPreview: textToSend.slice(0, 100),
         model
@@ -185,38 +194,51 @@ export function GeminiChat({ initialPrompt = '', onClose, isEmbedded = false }: 
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="quick-prompts-bar">
-        {quickPrompts.map((p) => (
-          <button
-            key={p}
-            className="quick-prompt-chip"
-            onClick={() => handleSend(p)}
-            disabled={loading}
-          >
-            {p}
+      {!canMessage() ? (
+        <div style={{ padding: '16px 20px', background: '#fffbeb', borderTop: '1px solid #fde68a', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <p style={{ fontSize: '12px', color: '#92400e', margin: 0, lineHeight: 1.5 }}>
+            I have reached this month's {currentPlan.companionPerMonth} messages on the {currentPlan.name} plan. The report and fix prompts are still yours.
+          </p>
+          <button className="button small" onClick={() => openWaitlistModal('pro', 'monthly')} style={{ alignSelf: 'flex-start' }}>
+            See Pro
           </button>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="quick-prompts-bar">
+            {quickPrompts.map((p) => (
+              <button
+                key={p}
+                className="quick-prompt-chip"
+                onClick={() => handleSend(p)}
+                disabled={loading}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
 
-      <form
-        className="chat-input-bar"
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSend();
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Ask Sentinel about cybersecurity, findings, or prompt fixes..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={loading}
-        />
-        <button className="button small" type="submit" disabled={!input.trim() || loading}>
-          Send
-          <Icon name="arrow" />
-        </button>
-      </form>
+          <form
+            className="chat-input-bar"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Ask Sentinel about cybersecurity, findings, or prompt fixes..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={loading}
+            />
+            <button className="button small" type="submit" disabled={!input.trim() || loading}>
+              Send
+              <Icon name="arrow" />
+            </button>
+          </form>
+        </>
+      )}
     </div>
   );
 }

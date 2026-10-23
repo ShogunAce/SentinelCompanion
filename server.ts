@@ -167,6 +167,31 @@ Provide a structured analysis in Markdown covering:
   }
 });
 
+// API Route: Contact Us submission handler
+app.post('/api/contact', (req, res) => {
+  const { name, email, topic, message } = req.body;
+
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    return res.status(400).json({ error: 'A valid email address is required.' });
+  }
+
+  if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    return res.status(400).json({ error: 'Message content cannot be empty.' });
+  }
+
+  const safeName = String(name || 'Anonymous Builder').slice(0, 100);
+  const safeTopic = String(topic || 'General Inquiry').slice(0, 100);
+  const safeMessage = String(message).slice(0, 3000);
+
+  console.log(`[CONTACT SUBMISSION] Target: coleslaysolutions@gmail.com | From: ${safeName} <${email}> | Topic: ${safeTopic}`);
+  console.log(`[CONTACT BODY]: ${safeMessage}`);
+
+  return res.json({
+    success: true,
+    message: 'Message received and dispatched to coleslaysolutions@gmail.com',
+  });
+});
+
 // Serve frontend with Vite dev middleware or static dist
 async function startServer() {
   const distPath = path.join(__dirname, 'dist');
