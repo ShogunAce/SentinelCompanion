@@ -27,46 +27,25 @@ export function PricingSection() {
 
           {/* Monthly / Annual Toggle for Pro */}
           <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginTop: '24px',
-              padding: '6px',
-              background: '#eaece5',
-              borderRadius: '30px',
-              border: '1px solid var(--line)',
-            }}
+            className="inline-flex max-w-full flex-wrap sm:flex-nowrap justify-center gap-1.5 sm:gap-3 p-1.5 rounded-full border border-[var(--line)] bg-[#eaece5] mt-6"
           >
             <button
               onClick={() => setBillingCycle('monthly')}
-              style={{
-                padding: '8px 18px',
-                borderRadius: '20px',
-                border: '0',
-                fontSize: '12px',
-                fontWeight: 550,
-                background: billingCycle === 'monthly' ? 'var(--white)' : 'transparent',
-                color: billingCycle === 'monthly' ? 'var(--ink)' : 'var(--muted)',
-                boxShadow: billingCycle === 'monthly' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                billingCycle === 'monthly'
+                  ? 'bg-white text-[var(--ink)] shadow-sm'
+                  : 'bg-transparent text-[var(--muted)]'
+              }`}
             >
               Monthly billing
             </button>
             <button
               onClick={() => setBillingCycle('annual')}
-              style={{
-                padding: '8px 18px',
-                borderRadius: '20px',
-                border: '0',
-                fontSize: '12px',
-                fontWeight: 550,
-                background: billingCycle === 'annual' ? 'var(--white)' : 'transparent',
-                color: billingCycle === 'annual' ? 'var(--ink)' : 'var(--muted)',
-                boxShadow: billingCycle === 'annual' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                billingCycle === 'annual'
+                  ? 'bg-white text-[var(--ink)] shadow-sm'
+                  : 'bg-transparent text-[var(--muted)]'
+              }`}
             >
               Annual billing (Save $45)
             </button>

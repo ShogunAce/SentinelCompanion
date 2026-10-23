@@ -106,14 +106,14 @@ export function ContactPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="surface" style={{ padding: '36px 32px' }}>
+            <form onSubmit={handleSubmit} className="surface p-5 sm:p-8">
               {errorMessage && (
                 <div className="auth-error-banner" style={{ marginBottom: '20px' }}>
                   {errorMessage}
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-5">
                 <div className="auth-field">
                   <label htmlFor="contact-name">Your Name</label>
                   <input

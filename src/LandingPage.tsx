@@ -5,6 +5,8 @@ import type { UrlFormProps } from './components';
 import { UserHeaderMenu } from './UserHeaderMenu';
 import Hero from './Hero';
 import { PricingSection } from './PricingSection';
+import { FaqSection } from './FaqSection';
+import { CtaFooter } from './CtaFooter';
 import { WaitlistModal } from './WaitlistModal';
 
 const publicLinks = [
@@ -66,33 +68,6 @@ function LandingHeader() {
   );
 }
 
-const faqs = [
-  [
-    'Why do vibecoded apps need Sentinel?',
-    'Vibe coding tools generate functional code rapidly, but AI models frequently overlook security hardening: missing authentication checks, unvalidated inputs, open database permissions, and exposed API keys. Sentinel acts as your digital companion to audit your vibecoded app and provide instant fixes.',
-  ],
-  [
-    'What happens when I run out of scans?',
-    'When you reach your 3 fresh scans for the month on the Free plan, your previous report and companion chats remain completely accessible. You can review existing findings and fix prompts at any time. Fresh scan limits reset automatically on the 1st of next month.',
-  ],
-  [
-    'Why is there a limit on companion messages?',
-    'Each message sent to the companion triggers a real-time Gemini AI API call that costs real computing resources. The Free plan includes a 15 message monthly allowance so every builder gets AI guidance without unexpected fees.',
-  ],
-  [
-    'Is Lifetime really lifetime?',
-    'Lifetime means the life of the Sentinel product, backed by a strict 100 seat cap and fair-use limits. Need more companion capacity? Bring your own Gemini key support is coming soon.',
-  ],
-  [
-    'What cybersecurity & coding flaws does Sentinel look for?',
-    'Sentinel checks for exposed API keys, broken client-side access rules, missing security headers, unsafe CORS policies, input sanitization gaps, and prompt injection vulnerabilities in AI workflows.',
-  ],
-  [
-    'How do I fix a security flaw found by Sentinel?',
-    'Sentinel translates every finding into plain-English context and generates copy-paste builder prompts. You simply paste the prompt into your AI builder (Cursor, Lovable, Bolt, v0, AI Studio) to apply the fix automatically.',
-  ],
-];
-
 export default function LandingPage(props: UrlFormProps) {
   return (
     <>
@@ -121,32 +96,109 @@ export default function LandingPage(props: UrlFormProps) {
           </div>
         </section>
 
-        <section className="translation-section">
-          <div className="container section">
-            <div className="section-intro">
-              <p className="section-kicker">No cybersecurity degree required</p>
-              <h2>
-                Flaws explained.<br />Fixes <em>ready to prompt.</em>
-              </h2>
-              <p>Sentinel translates complex security vulnerabilities into clear explanations and instant fixes for your AI builder.</p>
-            </div>
-            <div className="translation-rows">
-              {[
-                ['What is the vulnerability?', 'The cybersecurity flaw explained.', 'Understand what went wrong in your vibecoded app without wading through jargon.'],
-                ['Why is it a security risk?', 'The real-world impact.', 'See how an attacker could exploit the flaw to compromise user data or app logic.'],
-                ['How do I fix it?', 'A ready-to-use AI prompt.', 'Copy Sentinel’s targeted fix prompt directly into your AI builder to resolve the flaw immediately.'],
-              ].map(([q, h, p], i) => (
-                <div className="translation-row" key={q}>
-                  <span className="row-number">0{i + 1}</span>
-                  <div>
-                    <h3>{q}</h3>
-                    <p>
-                      <strong>{h}</strong> {p}
-                    </p>
-                  </div>
-                  <Icon name="arrow" />
+        {/* FLAWS EXPLAINED / FIXES READY TO PROMPT (Harmonized with Key Benefits Content & Dark Aesthetic) */}
+        <section
+          id="flaws-explained"
+          className="relative w-full bg-black text-white py-16 sm:py-24 overflow-hidden"
+          style={{
+            fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif",
+            WebkitFontSmoothing: 'antialiased',
+            MozOsxFontSmoothing: 'grayscale',
+          }}
+        >
+          {/* Blue Blobs from Key Benefits design */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -left-[360px] h-[480px] w-[480px] rounded-full bg-[#1e3a8a] blur-3xl opacity-40 pointer-events-none"
+            aria-hidden="true"
+          />
+          <div
+            className="absolute -top-28 -right-28 h-64 w-64 rounded-full bg-[#1e3a8a] blur-3xl opacity-35 pointer-events-none"
+            aria-hidden="true"
+          />
+
+          <div className="relative z-10 w-full max-w-[1220px] mx-auto px-4 sm:px-6 md:px-10">
+            <div className="grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] gap-12 lg:gap-20 items-start">
+              {/* Left Column: Section Intro & Preemptive Defense Overview */}
+              <div className="flex flex-col">
+                <div
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-6 w-fit"
+                  style={{
+                    background: 'rgba(38, 75, 194, 0.16)',
+                    border: '1.2px solid rgba(79, 118, 246, 0.35)',
+                    backdropFilter: 'blur(12px)',
+                  }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  <span className="text-[11px] font-semibold tracking-wider text-[#93c5fd] uppercase">
+                    Key Benefits · Preemptive Defense
+                  </span>
                 </div>
-              ))}
+
+                <h2
+                  className="text-white text-3xl sm:text-4xl md:text-5xl font-light leading-tight tracking-tight mb-6"
+                  style={{ letterSpacing: '-0.04em' }}
+                >
+                  Flaws explained.<br />
+                  Fixes <em className="not-italic text-blue-400 font-serif italic">ready to prompt.</em>
+                </h2>
+
+                <p className="text-white/80 font-light text-sm sm:text-base leading-relaxed max-w-[380px] mb-4">
+                  Defense platforms constantly observe bandwidth streams, record files, and machine behaviors to uncover unusual patterns or outliers that could signal a defensive failure.
+                </p>
+
+                <p className="text-white/60 font-light text-xs sm:text-sm leading-relaxed max-w-[380px]">
+                  Sentinel translates complex vulnerabilities into clear explanations and instant fixes for your AI builder, no cybersecurity degree required.
+                </p>
+              </div>
+
+              {/* Right Column: 3 Steps / Key Benefit Cards in Neutral-950 Aesthetic */}
+              <div className="flex flex-col gap-4">
+                {[
+                  [
+                    'Preemptive Risks Scouting',
+                    'What is the vulnerability?',
+                    'Defense platforms observe bandwidth streams, record files, and machine behaviors to uncover unusual patterns or outliers before attackers strike.',
+                  ],
+                  [
+                    'Defensive Impact Analysis',
+                    'Why is it a security risk?',
+                    'Understand the real-world operational and privacy consequence of every leak, bypass, or misconfiguration without wading through jargon.',
+                  ],
+                  [
+                    'Instant Reaction & Remediation',
+                    'How do I fix it?',
+                    'Copy Sentinel’s targeted fix prompt directly into your AI code builder (Cursor, Lovable, Bolt, v0) to resolve the flaw immediately.',
+                  ],
+                ].map(([q, h, p], i) => (
+                  <div
+                    key={q}
+                    className="group relative rounded-2xl bg-neutral-950/80 border border-neutral-900 p-4 xs:p-5 sm:p-7 flex gap-3.5 sm:gap-6 items-start transition-all duration-300 hover:border-neutral-800 hover:-translate-y-0.5"
+                    style={{
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+                    }}
+                  >
+                    <span
+                      className="text-lg sm:text-2xl font-light text-blue-400/80 flex-shrink-0 pt-0.5 sm:pt-0"
+                      style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+                    >
+                      0{i + 1}
+                    </span>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white text-base sm:text-xl font-light leading-snug mb-1">
+                        {q}
+                      </h3>
+                      <p className="text-white/70 font-light text-xs sm:text-sm leading-relaxed">
+                        <strong className="text-white font-medium">{h}</strong> {p}
+                      </p>
+                    </div>
+
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-neutral-800 flex items-center justify-center flex-shrink-0 mt-0.5 text-blue-400 group-hover:border-blue-500/50 group-hover:bg-blue-950/30 transition-colors">
+                      <Icon name="arrow" className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -230,59 +282,13 @@ export default function LandingPage(props: UrlFormProps) {
           <p className="subtle">Sentinel provides prompt fixes compatible with any AI code generator. Not affiliated with these tools.</p>
         </section>
 
-        <section id="faq" className="container section faq-section">
-          <div>
-            <p className="section-kicker">Everything you need to know</p>
-            <h2>
-              Questions,<br />answered <em>plainly.</em>
-            </h2>
-          </div>
-          <div className="faq-list">
-            {faqs.map(([q, a]) => (
-              <details key={q}>
-                <summary>
-                  {q}
-                  <span className="disclosure-mark">+</span>
-                </summary>
-                <p>{a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
+        {/* FAQ SECTION (Interactive Search, 4 Category Cards & Smooth One-at-a-Time Accordion) */}
+        <FaqSection />
 
-        <section className="closing container">
-          <div>
-            <p className="section-kicker">Your digital companion is ready</p>
-            <h2>
-              Vibe code with<br /><em>security confidence.</em>
-            </h2>
-            <ActionLink to="/workspace">Open workspace</ActionLink>
-          </div>
-          <div className="coming-later">
-            <Icon name="shield" />
-            <h3>Live companion scanning is ready.</h3>
-            <p>
-              Get to know the workspace now.<br />Catch cybersecurity & coding flaws before your users do.
-            </p>
-            <span className="subtle">Free plan includes 3 scans / month</span>
-          </div>
-        </section>
       </main>
 
-      <footer className="container footer">
-        <div>
-          <Brand />
-          <p>Digital security companion for vibecoded apps.</p>
-        </div>
-        <nav aria-label="Footer">
-          <a href="#how-it-works">How it works</a>
-          <Link to="/pricing">Pricing</Link>
-          <Link to="/contact">Contact Us</Link>
-          <a href="#faq">FAQ</a>
-          <Link to="/workspace">Workspace</Link>
-        </nav>
-        <p className="subtle">Sentinel Digital Security Companion</p>
-      </footer>
+      {/* Cinematic HLS Video Call-to-Action & Liquid Glass Footer */}
+      <CtaFooter />
 
       <WaitlistModal />
     </>
