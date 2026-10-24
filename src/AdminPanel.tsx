@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { fetchActivityLogs, fetchAllUsersForAdmin, adminUpdateUserProfile, type ActivityLog, type UserProfile } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
@@ -120,26 +121,48 @@ export function AdminPanel() {
           </p>
         </div>
 
-        <button
-          onClick={loadAdminData}
-          disabled={loading}
-          style={{
-            background: '#27272a',
-            color: '#f3f4f6',
-            border: '1px solid #3f3f46',
-            padding: '0.6rem 1.2rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontWeight: 600,
-            fontSize: '0.875rem'
-          }}
-        >
-          <Icon name="arrow" />
-          {loading ? 'Syncing Telemetry...' : 'Refresh Activity'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <Link
+            to="/workspace"
+            style={{
+              background: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              padding: '0.6rem 1.2rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              textDecoration: 'none'
+            }}
+          >
+            <span>Open Builder Workspace →</span>
+          </Link>
+
+          <button
+            onClick={loadAdminData}
+            disabled={loading}
+            style={{
+              background: '#27272a',
+              color: '#f3f4f6',
+              border: '1px solid #3f3f46',
+              padding: '0.6rem 1.2rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontWeight: 600,
+              fontSize: '0.875rem'
+            }}
+          >
+            <Icon name="arrow" />
+            {loading ? 'Syncing Telemetry...' : 'Refresh Activity'}
+          </button>
+        </div>
       </div>
 
       {/* Analytics KPI Stat Cards */}

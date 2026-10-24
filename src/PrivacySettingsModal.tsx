@@ -101,12 +101,13 @@ export function PrivacySettingsModal({ isOpen, onClose }: PrivacySettingsModalPr
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(15, 23, 42, 0.7)',
+        background: 'rgba(15, 23, 42, 0.8)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
-        padding: '20px',
+        padding: '32px 16px',
+        overflowY: 'auto',
         zIndex: 99999,
       }}
     >
@@ -116,10 +117,11 @@ export function PrivacySettingsModal({ isOpen, onClose }: PrivacySettingsModalPr
           borderRadius: '20px',
           maxWidth: '580px',
           width: '100%',
-          maxHeight: '90vh',
+          margin: 'auto 0',
+          maxHeight: 'calc(100vh - 64px)',
           overflowY: 'auto',
           padding: '24px 28px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
           border: '1px solid #e2e8f0',
         }}
       >

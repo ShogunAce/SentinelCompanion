@@ -61,9 +61,9 @@ function App() {
   const form = { value: url, onChange: setUrl };
 
   return (
-    <AuthProvider>
-      <UsageProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <UsageProvider>
           <a className="skip-link" href="#main-content">Skip to content</a>
           <RouteEffects />
           <Routes>
@@ -101,9 +101,9 @@ function App() {
           {/* Freely movable robot companion widget & global cookie compliance */}
           <DraggableCompanionWidget />
           <CookieConsentBanner />
-        </BrowserRouter>
-      </UsageProvider>
-    </AuthProvider>
+        </UsageProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

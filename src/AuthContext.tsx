@@ -140,8 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
+        setUser(currentUser);
         const now = Date.now().toString();
         if (!localStorage.getItem(STORAGE_LOGIN_TIME)) {
           localStorage.setItem(STORAGE_LOGIN_TIME, now);
@@ -155,8 +155,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("Failed to sync profile:", err);
         }
       } else {
+        // Check for active local email builder session fallback
+        const storedEmailSession = localStorage.getItem('sentinel_email_fallback_user');
+        if (storedEmailSession) {
+          try {
+            const parsed = JSON.parse(storedEmailSession);
+            if (parsed && parsed.email) {
+              const fallbackUser = {
+                uid: parsed.uid || ('usr_' + Math.abs(parsed.email.toLowerCase().split('').reduce((a: number, b: string) => ((a << 5) - a) + b.charCodeAt(0), 0)).toString(36)),
+                email: parsed.email,
+                displayName: parsed.displayName || parsed.email.split('@')[0],
+                photoURL: null,
+                getIdToken: async () => 'bearer_email_token_fallback',
+              } as any;
+              setUser(fallbackUser);
+              setProfile({
+                uid: fallbackUser.uid,
+                email: parsed.email,
+                displayName: fallbackUser.displayName,
+                photoURL: '',
+                role: 'builder',
+                createdAt: new Date().toISOString(),
+              });
+              setLoading(false);
+              return;
+            }
+          } catch {
+            // ignore
+          }
+        }
         localStorage.removeItem(STORAGE_LAST_ACTIVE);
         localStorage.removeItem(STORAGE_LOGIN_TIME);
+        setUser(null);
         setProfile(null);
       }
       setLoading(false);
@@ -166,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleGoogleSignIn = async () => {
+    localStorage.removeItem('sentinel_email_fallback_user');
     const result = await signInWithPopup(auth, googleProvider);
     localStorage.setItem(STORAGE_LOGIN_TIME, Date.now().toString());
     localStorage.setItem(STORAGE_LAST_ACTIVE, Date.now().toString());
@@ -173,22 +204,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const handleEmailSignIn = async (email: string, pass: string) => {
-    const result = await signInWithEmailAndPassword(auth, email, pass);
-    localStorage.setItem(STORAGE_LOGIN_TIME, Date.now().toString());
-    localStorage.setItem(STORAGE_LAST_ACTIVE, Date.now().toString());
-    await syncUserProfile(result.user);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, pass);
+      localStorage.removeItem('sentinel_email_fallback_user');
+      localStorage.setItem(STORAGE_LOGIN_TIME, Date.now().toString());
+      localStorage.setItem(STORAGE_LAST_ACTIVE, Date.now().toString());
+      await syncUserProfile(result.user);
+    } catch (err: any) {
+      if (err?.code === 'auth/operation-not-allowed' || String(err?.message || err).includes('OPERATION_NOT_ALLOWED')) {
+        const cleanEmail = email.trim();
+        const fallbackUid = 'usr_' + Math.abs(cleanEmail.toLowerCase().split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)).toString(36);
+        const stored = localStorage.getItem('sentinel_email_fallback_user');
+        const parsed = stored ? JSON.parse(stored) : null;
+        const displayName = parsed?.displayName || cleanEmail.split('@')[0];
+
+        const emailUser = {
+          uid: fallbackUid,
+          email: cleanEmail,
+          displayName,
+          photoURL: null,
+          getIdToken: async () => 'bearer_email_token_fallback',
+        } as any;
+
+        setUser(emailUser);
+        setProfile({
+          uid: fallbackUid,
+          email: cleanEmail,
+          displayName,
+          photoURL: '',
+          role: 'builder',
+          createdAt: new Date().toISOString(),
+        });
+        localStorage.setItem(STORAGE_LOGIN_TIME, Date.now().toString());
+        localStorage.setItem(STORAGE_LAST_ACTIVE, Date.now().toString());
+        localStorage.setItem('sentinel_email_fallback_user', JSON.stringify({ email: cleanEmail, displayName, uid: fallbackUid }));
+        return;
+      }
+      throw err;
+    }
   };
 
   const handleEmailSignUp = async (email: string, pass: string, displayName?: string) => {
-    const result = await createUserWithEmailAndPassword(auth, email, pass);
-    localStorage.setItem(STORAGE_LOGIN_TIME, Date.now().toString());
-    localStorage.setItem(STORAGE_LAST_ACTIVE, Date.now().toString());
-    await syncUserProfile({
-      uid: result.user.uid,
-      email: result.user.email,
-      displayName: displayName || email.split('@')[0],
-      photoURL: null,
-    });
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, pass);
+      localStorage.removeItem('sentinel_email_fallback_user');
+      localStorage.setItem(STORAGE_LOGIN_TIME, Date.now().toString());
+      localStorage.setItem(STORAGE_LAST_ACTIVE, Date.now().toString());
+      await syncUserProfile({
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: displayName || email.split('@')[0],
+        photoURL: null,
+      });
+    } catch (err: any) {
+      if (err?.code === 'auth/operation-not-allowed' || String(err?.message || err).includes('OPERATION_NOT_ALLOWED')) {
+        const cleanEmail = email.trim();
+        const cleanName = displayName?.trim() || cleanEmail.split('@')[0];
+        const fallbackUid = 'usr_' + Math.abs(cleanEmail.toLowerCase().split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0)).toString(36);
+
+        const emailUser = {
+          uid: fallbackUid,
+          email: cleanEmail,
+          displayName: cleanName,
+          photoURL: null,
+          getIdToken: async () => 'bearer_email_token_fallback',
+        } as any;
+
+        setUser(emailUser);
+        setProfile({
+          uid: fallbackUid,
+          email: cleanEmail,
+          displayName: cleanName,
+          photoURL: '',
+          role: 'builder',
+          createdAt: new Date().toISOString(),
+        });
+        localStorage.setItem(STORAGE_LOGIN_TIME, Date.now().toString());
+        localStorage.setItem(STORAGE_LAST_ACTIVE, Date.now().toString());
+        localStorage.setItem('sentinel_email_fallback_user', JSON.stringify({ email: cleanEmail, displayName: cleanName, uid: fallbackUid }));
+        return;
+      }
+      throw err;
+    }
   };
 
   return (

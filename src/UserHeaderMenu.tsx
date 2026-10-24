@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { PrivacySettingsModal } from './PrivacySettingsModal';
 import { Icon } from './components';
+
+const ADMIN_EMAILS = ['coleslaysolutions@gmail.com', 'coleduane96@gmail.com'];
 
 export function UserHeaderMenu() {
   const { user, profile, logout, openAuthModal } = useAuth();
@@ -21,10 +24,11 @@ export function UserHeaderMenu() {
   }
 
   const initial = (profile?.displayName || user.email || 'U').charAt(0).toUpperCase();
+  const isAdmin = user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   return (
     <>
-      <div className="user-menu" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div className="user-menu" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
         <div className="user-avatar" title={profile?.email || user.email || ''}>
           {profile?.photoURL ? (
             <img src={profile.photoURL} alt="" />
@@ -34,10 +38,31 @@ export function UserHeaderMenu() {
         </div>
         <div className="user-badge">
           <span className="user-name">{profile?.displayName || 'Vibe Builder'}</span>
-          <span className="user-role" style={{ color: '#64748b', fontSize: '11px' }}>
-            {profile?.accountStatus === 'pending_deletion' ? '⚠️ Deletion Pending' : 'Verified Builder'}
+          <span className="user-role" style={{ color: isAdmin ? '#ef4444' : '#64748b', fontSize: '11px', fontWeight: isAdmin ? 700 : 400 }}>
+            {profile?.accountStatus === 'pending_deletion' ? '⚠️ Deletion Pending' : isAdmin ? '⚡ Admin' : 'Verified Builder'}
           </span>
         </div>
+
+        {isAdmin && (
+          <Link
+            to="/ops-nexus-903f"
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '6px',
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: 700,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <span>⚡ Admin Command</span>
+          </Link>
+        )}
 
         <button
           type="button"
